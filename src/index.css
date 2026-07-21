@@ -1,0 +1,374 @@
+/* Playfair Display — usada por Laboratorio / Asistente / Splash (serif de marca). */
+@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* ── Theme tokens (controlled by data-theme + data-mode on <html>) ──
+   Temas reactivos ("cuervo"/"zen"/"pop"): neutros en
+   `[data-mode="light|dark"][data-theme="..."]`; acento en
+   `[data-theme="..."]` sin `[data-mode]` (inmutable en ambos modos).
+*/
+
+:root {
+  /* Fallback antes de que `DashboardLayout` escriba data-theme/data-mode en
+     <html> (primer paint) — Premium Dark en modo Oscuro, tal y como arrancaba
+     la app antes de esta refactorización. */
+  --cuervo: #0a0a0b;
+  --wenge: #7a5b51;
+  --wenge-deep: #645452;
+
+  --background: #0a0a0b;
+  --foreground: #f2f0ec;
+  --card: #131315;
+  --card-foreground: #f2f0ec;
+  --card-border-rest: rgb(255 255 255 / 0.06);
+  --primary: #7a5b51;
+  --primary-foreground: #faf7f4;
+  --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--background));
+  --muted: #161618;
+  --muted-foreground: #9c9691;
+  --border: rgb(255 255 255 / 0.08);
+  --secondary: #101012;
+  --secondary-foreground: #cbc4bc;
+  --icon-muted: #83807c;
+  --glow-interactive: 0 0 18px rgb(122 91 81 / 0.45),
+    0 0 36px rgb(122 91 81 / 0.15);
+  --glow-interactive-sm: 0 0 12px rgb(122 91 81 / 0.35);
+  --glow-card: 0 0 15px color-mix(in srgb, var(--primary) 14%, transparent),
+    0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* ── Acentos (Misión 3: inmutables en ambos modos) ──
+   Solo definen el hilo de color de cada tema reactivo — nunca fondo, texto
+   ni bordes. Al no llevar `[data-mode]`, aplican sin importar el modo. */
+
+/* Premium Dark — acento Wenge (marrón). */
+[data-theme="cuervo"] {
+  --wenge: #7a5b51;
+  --wenge-deep: #645452;
+  --primary: #7a5b51;
+  --primary-foreground: #faf7f4;
+  --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--background));
+  --glow-interactive: 0 0 18px rgb(122 91 81 / 0.45),
+    0 0 36px rgb(122 91 81 / 0.15);
+  --glow-interactive-sm: 0 0 12px rgb(122 91 81 / 0.35);
+  --glow-card: 0 0 15px color-mix(in srgb, var(--primary) 14%, transparent),
+    0 0 1px color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+/* Zen Light — acento Teal (antes "medical"). */
+[data-theme="zen"] {
+  --wenge: #0d9488;
+  --wenge-deep: #115e59;
+  --primary: #0d9488;
+  --primary-foreground: #ffffff;
+  --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--background));
+  --glow-interactive: 0 0 18px rgb(13 148 136 / 0.3);
+  --glow-interactive-sm: 0 0 12px rgb(13 148 136 / 0.2);
+  --glow-card: 0 0 15px color-mix(in srgb, var(--primary) 10%, transparent),
+    0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* Neon Pop — acento Rosa (antes "rose"). */
+[data-theme="pop"] {
+  --wenge: #fb7185;
+  --wenge-deep: #f43f5e;
+  --primary: #fb7185;
+  --primary-foreground: #ffffff;
+  --primary-soft: color-mix(in srgb, var(--primary) 16%, var(--background));
+  --glow-interactive: 0 0 18px rgb(251 113 133 / 0.35);
+  --glow-interactive-sm: 0 0 12px rgb(251 113 133 / 0.2);
+  --glow-card: 0 0 15px color-mix(in srgb, var(--primary) 10%, transparent),
+    0 0 1px color-mix(in srgb, var(--primary) 18%, transparent);
+}
+
+/* ── Neutros reactivos ──
+   Fondo, tarjetas, texto, bordes y grises. El acento (--wenge/--primary)
+   de arriba sobrevive intacto porque estos bloques no lo redeclaran. */
+
+/* Modo Oscuro: negro abisal + carbón. */
+[data-mode="dark"][data-theme="cuervo"],
+[data-mode="dark"][data-theme="zen"],
+[data-mode="dark"][data-theme="pop"] {
+  --cuervo: #0a0a0b;
+  --background: #0a0a0b;
+  --foreground: #f2f0ec;
+  --card: #131315;
+  --card-foreground: #f2f0ec;
+  --card-border-rest: rgb(255 255 255 / 0.06);
+  --muted: #161618;
+  --muted-foreground: #9c9691;
+  --border: rgb(255 255 255 / 0.08);
+  --secondary: #101012;
+  --secondary-foreground: #cbc4bc;
+  --icon-muted: #83807c;
+}
+
+/* Modo Claro: blanco/gris ultra-claro + texto oscuro. */
+[data-mode="light"][data-theme="cuervo"],
+[data-mode="light"][data-theme="zen"],
+[data-mode="light"][data-theme="pop"] {
+  --cuervo: #fafafa;
+  --background: #fafafa;
+  --foreground: #18181b;
+  --card: #ffffff;
+  --card-foreground: #18181b;
+  --card-border-rest: rgb(0 0 0 / 0.06);
+  --muted: #f4f4f5;
+  --muted-foreground: #52525b;
+  --border: #e4e4e7;
+  --secondary: #f4f4f5;
+  --secondary-foreground: #3f3f46;
+  --icon-muted: #71717a;
+}
+
+/* ── Tailwind semantic color mapping ── */
+
+@theme {
+  --color-cuervo: var(--cuervo);
+  --color-wenge: var(--wenge);
+  --color-wenge-deep: var(--wenge-deep);
+  --color-wenge-subtle: color-mix(in srgb, var(--wenge) 12%, transparent);
+  --color-wenge-border: color-mix(in srgb, var(--wenge) 50%, transparent);
+  --color-wenge-border-subtle: color-mix(in srgb, var(--wenge) 30%, transparent);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-card-rest: var(--card-border-rest);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-icon-muted: var(--icon-muted);
+  --shadow-glow: var(--glow-interactive);
+  --shadow-glow-sm: var(--glow-interactive-sm);
+  --shadow-glow-card: var(--glow-card);
+}
+
+/* ── "El Laboratorio" (LaboratoryView.tsx) — Santuario de Datos ──
+   Vive fuera de cualquier `[data-theme]`: estética fija de vista, no un
+   tema global. Reutiliza Playfair Display sin depender del tema activo. */
+.lab-serif,
+.assistant-serif {
+  font-family: "Playfair Display", serif;
+}
+
+/* ── Premium utilities ── */
+
+/* ── Glow card utilities ── */
+
+@utility glow-card {
+  border-radius: 0.5rem;
+  border: 1px solid var(--card-border-rest);
+  background-color: var(--card);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease,
+    background-color 0.3s ease;
+
+  &:hover {
+    border-color: var(--primary);
+    box-shadow: var(--glow-card);
+  }
+}
+
+@utility glow-card-nav {
+  border-radius: 0.5rem;
+  border: 1px solid transparent;
+  background-color: transparent;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease,
+    background-color 0.3s ease, color 0.3s ease;
+
+  &:hover {
+    border-color: var(--primary);
+    background-color: var(--card);
+    box-shadow: var(--glow-card);
+  }
+}
+
+@utility premium-btn {
+  transition: box-shadow 0.3s ease, background-color 0.2s ease,
+    border-color 0.2s ease;
+
+  &:hover {
+    box-shadow: var(--glow-interactive-sm);
+  }
+}
+
+/* ── "Quirófano Matemático": Flip 3D real (Misión 3 de StudyView) ──
+   Tailwind v4 no trae utilidades de `perspective`/`rotateY`/
+   `backface-visibility` de fábrica, así que viven aquí, igual que
+   `glow-card` arriba. Tres piezas:
+     1. `flip-scene`  — el contenedor exterior con `perspective`: es lo que
+        le da profundidad 3D real al giro (sin esto, `rotateY` gira "plano").
+     2. `flip-card-inner` (+ `flip-card-inner-flipped`) — la pieza que
+        realmente rota 180°; `preserve-3d` es lo que mantiene sus dos caras
+        hijas en el espacio 3D en vez de aplastarlas contra el plano.
+     3. `flip-card-face` (+ `flip-card-face-back`) — cada cara, apilada por
+        `position: absolute` sobre la otra; `backface-visibility: hidden`
+        es lo que evita ver la cara opuesta "en espejo" a mitad de giro. */
+@utility flip-scene {
+  perspective: 1800px;
+}
+
+@utility flip-card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+  transition: transform 700ms cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+@utility flip-card-inner-flipped {
+  transform: rotateY(180deg);
+}
+
+@utility flip-card-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+@utility flip-card-face-back {
+  transform: rotateY(180deg);
+}
+
+/* Entrada del Centro de Mando Táctico: solo existe en el DOM tras el giro
+   (condición estricta de la Misión 4, ver `StudyView.tsx`), así que un
+   montaje "seco" se sentiría abrupto — este pequeño keyframe le da una
+   llegada suave, coherente con el resto de transiciones "de lujo" de la app. */
+@keyframes tactical-command-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.tactical-command-in {
+  animation: tactical-command-in 420ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--background);
+  color: var(--foreground);
+  transition: background-color 0.25s ease, color 0.25s ease;
+}
+
+/* Glow radial sutil, exclusivo de Premium Dark en modo Oscuro — en modo
+   Claro el fondo pasa a blanco/gris ultra-claro y este halo dejaría de leer
+   como "silencioso", así que no se hereda ahí. */
+[data-mode="dark"][data-theme="cuervo"] body {
+  background-image: radial-gradient(
+    ellipse 90% 60% at 50% -10%,
+    rgb(122 91 81 / 0.07),
+    transparent 65%
+  );
+}
+
+/* ── Entornos fotográficos: vidrio oscuro + blur (inyectados como --cuervo) ──
+   En móvil (luz diurna, pantallas pequeñas) el fondo fotográfico no debe
+   competir con el texto médico: paneles `#0B0D0F/85` + `backdrop-blur-md`. */
+[data-theme="tema-basalto"] aside,
+[data-theme="tema-basalto"] header,
+[data-theme="tema-niebla"] aside,
+[data-theme="tema-niebla"] header,
+[data-theme="tema-fuji"] aside,
+[data-theme="tema-fuji"] header,
+[data-theme="tema-seda"] aside,
+[data-theme="tema-seda"] header,
+[data-theme="tema-sakura"] aside,
+[data-theme="tema-sakura"] header {
+  background-color: var(--cuervo);
+  border-color: var(--border);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+[data-theme="tema-basalto"] .glow-card,
+[data-theme="tema-niebla"] .glow-card,
+[data-theme="tema-fuji"] .glow-card,
+[data-theme="tema-seda"] .glow-card,
+[data-theme="tema-sakura"] .glow-card,
+[data-theme="tema-basalto"] .photo-glass-panel,
+[data-theme="tema-niebla"] .photo-glass-panel,
+[data-theme="tema-fuji"] .photo-glass-panel,
+[data-theme="tema-seda"] .photo-glass-panel,
+[data-theme="tema-sakura"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* ── "Secuencia de Arranque Cinematográfica" (Splash Screen) ──
+   Vive fuera de la jerarquía `[data-theme]`/`[data-mode]` a propósito — es
+   la primera cosa que ve cualquier usuario, antes de que la app siquiera
+   sepa qué tema tiene guardado, así que su paleta (negro absoluto + plata)
+   es fija e inmutable. Duración total exacta:
+   5000ms, repartida en dos mitades iguales de 2500ms — ver `SplashScreenView.tsx`,
+   que es quien aplica estas dos animaciones y a quien `App.tsx` desmonta
+   justo cuando terminan (opacidad ya en 0, sin salto visible). */
+
+@keyframes splash-veil-fade {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes splash-text-fade {
+  0% {
+    opacity: 0;
+    letter-spacing: 0.3em;
+    text-shadow: 0 0 0 rgb(255 255 255 / 0);
+  }
+  45% {
+    opacity: 1;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 22px rgb(255 255 255 / 0.35);
+  }
+  55% {
+    text-shadow: 0 0 34px rgb(255 255 255 / 0.55);
+  }
+  70% {
+    text-shadow: 0 0 16px rgb(255 255 255 / 0.2);
+  }
+  100% {
+    opacity: 1;
+    letter-spacing: 0.08em;
+    text-shadow: 0 0 12px rgb(255 255 255 / 0.12);
+  }
+}
+
+/* El contenedor a pantalla completa: negro absoluto, estable durante la
+   primera mitad, se desvanece junto con el texto en la segunda (misma
+   duración total que `.splash-brand-text` de abajo, para que ambos lleguen
+   a opacidad 0 en el mismo instante exacto). */
+.splash-veil {
+  animation: splash-veil-fade 5000ms ease-in-out forwards;
+}
+
+/* El texto "Excellence absolue": nace invisible, aparece muy lentamente
+   durante los primeros 2500ms con un brillo sutil de plata pulida en el
+   punto medio, y se mantiene en opacidad 1 el resto del tiempo — el
+   fade-out final NO es suyo, es el de `.splash-veil` (su contenedor
+   padre), que al desvanecerse se lleva consigo tanto el fondo como el
+   texto en un único movimiento ("junto con el fondo"). */
+.splash-brand-text {
+  animation: splash-text-fade 5000ms ease-in-out forwards;
+}
