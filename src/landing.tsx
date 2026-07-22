@@ -1,5 +1,6 @@
 import { motion, type Variants } from "framer-motion";
 import { Brain } from "lucide-react";
+import { Analytics } from "@vercel/analytics/react";
 
 const MAC_DOWNLOAD_URL =
   "https://github.com/davidlevanoporras-prog/estudio-app-landing/releases/download/v1.0.0/Excellence.Absolue_1.0.0_aarch64.dmg";
@@ -351,6 +352,7 @@ export default function Landing() {
           © {new Date().getFullYear()} Excellence Absolue
         </p>
       </footer>
+      <Analytics />
     </div>
   );
 }
