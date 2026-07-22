@@ -60,7 +60,26 @@ function WindowsIcon({ className }: { className?: string }) {
  */
 export default function Landing() {
   return (
-    <div className="relative w-full bg-[#050505] text-[#e8e6e3]">
+    <div className="relative min-h-screen w-full text-[#e8e6e3]">
+      {/* Fondo Basalto — cover full-page */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 bg-[#050505] bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url('/tema-basalto.webp')",
+        }}
+      />
+      {/* Overlay oscuro para contraste del texto, logo y CTAs */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 z-0 bg-black/50"
+        style={{
+          backgroundImage:
+            "linear-gradient(180deg, rgba(5,5,5,0.72) 0%, rgba(5,5,5,0.45) 35%, rgba(5,5,5,0.55) 70%, rgba(5,5,5,0.82) 100%)",
+        }}
+      />
+
+      <div className="relative z-10">
       {/* ═══ HERO — 100vh, coreografía + CTAs de descarga ═══ */}
       <section className="relative h-[100vh] w-full overflow-hidden">
         {/* Fase 2 — Logo: emerge al centro cuando el texto llega a la base */}
@@ -337,6 +356,7 @@ export default function Landing() {
           © {new Date().getFullYear()} Excellence Absolue
         </p>
       </footer>
+      </div>
     </div>
   );
 }
