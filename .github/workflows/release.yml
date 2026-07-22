@@ -1,0 +1,105 @@
+name: Release Windows
+# Compila el instalador nativo de Tauri para Windows (.msi / .exe NSIS)
+# y lo adjunta al Release de GitHub correspondiente.
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+permissions:
+  contents: write
+jobs:
+  build-windows:
+    name: Build Tauri (Windows)
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Install frontend dependencies
+        run: npm ci
+      - name: Build Tauri (Windows)
+        # beforeBuildCommand en tauri.conf.json ejecuta `npm run build`
+        run: npm run tauri -- build
+        env:
+          # Evita prompts interactivos en CI
+          CI: true
+      - name: Locate Windows installers
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" -ErrorAction SilentlyContinue
+          $nsis = Get-ChildItem -Path "src-tauri/target/release/bundle/nsis" -Filter "*.exe" -ErrorAction SilentlyContinue
+          if (-not $msi -and -not $nsis) {
+            Write-Error "No se encontraron instaladores en bundle/msi ni bundle/nsis"
+            if (Test-Path "src-tauri/target/release/bundle") {
+              Get-ChildItem -Path "src-tauri/target/release/bundle" -Recurse | Select-Object FullName
+            }
+            exit 1
+          }
+          Write-Host "Artefactos listos:"
+          if ($msi)  { $msi  | ForEach-Object { Write-Host " - $($_.FullName)" } }
+          if ($nsis) { $nsis | ForEach-Object { Write-Host " - $($_.FullName)" } }
+      - name: Resolve target release tag
+        id: release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            TAG="${GITHUB_REF_NAME}"
+            echo "Usando tag del push: ${TAG}"
+          else
+            # workflow_dispatch → adjuntar al último Release publicado
+            TAG="$(gh release list --limit 1 --json tagName --jq '.[0].tagName')"
+            if [[ -z "${TAG}" || "${TAG}" == "null" ]]; then
+              echo "::error::No hay Releases en este repositorio. Crea uno (p. ej. v1.0.0) o dispara el workflow con un tag v*."
+              exit 1
+            fi
+            echo "Usando último Release: ${TAG}"
+          fi
+          echo "tag=${TAG}" >> "${GITHUB_OUTPUT}"
+      - name: Ensure GitHub Release exists
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          if gh release view "${TAG}" >/dev/null 2>&1; then
+            echo "Release ${TAG} ya existe."
+          else
+            echo "Creando Release ${TAG}..."
+            gh release create "${TAG}" \
+              --title "Excellence Absolue ${TAG}" \
+              --notes "Instalador Windows generado automáticamente por GitHub Actions." \
+              --latest
+          fi
+      - name: Upload Windows installers to Release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.release.outputs.tag }}"
+          mapfile -t FILES < <(find src-tauri/target/release/bundle/msi src-tauri/target/release/bundle/nsis \
+            -type f \( -name '*.msi' -o -name '*.exe' \) 2>/dev/null || true)
+          if [[ ${#FILES[@]} -eq 0 ]]; then
+            echo "::error::Sin archivos .msi/.exe para subir."
+            exit 1
+          fi
+          echo "Subiendo a Release ${TAG}:"
+          printf ' - %s\n' "${FILES[@]}"
+          # --clobber reemplaza assets previos del mismo nombre en ese Release
+          gh release upload "${TAG}" "${FILES[@]}" --clobber
