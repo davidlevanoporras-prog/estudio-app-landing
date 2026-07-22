@@ -1,6 +1,9 @@
 import { motion, type Variants } from "framer-motion";
 import { Brain } from "lucide-react";
 
+const LEMON_SQUEEZY_CHECKOUT =
+  "https://excellenceabsolue.lemonsqueezy.com/checkout/buy/d967ee67-1653-4c34-8948-18fd57f41366";
+
 const reveal: Variants = {
   hidden: { opacity: 0, y: 36 },
   visible: {
@@ -19,14 +22,40 @@ const revealSlow: Variants = {
   },
 };
 
+function AppleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.33 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+    </svg>
+  );
+}
+
+function WindowsIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      aria-hidden
+    >
+      <path d="M3 5.5 10.5 4.4v7.1H3V5.5zm0 13 7.5 1.1v-7.2H3v6.1zM11.5 4.25 21 3v8.5h-9.5V4.25zM11.5 20.9 21 22V12.5h-9.5v8.4z" />
+    </svg>
+  );
+}
+
 /**
- * Landing — Dark Luxury.
- * Hero cinematográfico intacto (Fase 1 + 2). Debajo: ciencia + pricing con scroll.
+ * Landing — Dark Luxury + Freemium.
+ * Hero: descargas gratuitas. Debajo: ciencia + muro Pro (Lemon Squeezy).
  */
 export default function Landing() {
   return (
     <div className="relative w-full bg-[#050505] text-[#e8e6e3]">
-      {/* ═══ HERO — 100vh, coreografía original sin cambios ═══ */}
+      {/* ═══ HERO — 100vh, coreografía + CTAs de descarga ═══ */}
       <section className="relative h-[100vh] w-full overflow-hidden">
         {/* Fase 2 — Logo: emerge al centro cuando el texto llega a la base */}
         <div className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
@@ -55,6 +84,36 @@ export default function Landing() {
             </div>
           </motion.div>
         </div>
+
+        {/* Descargas gratuitas — emergen tras la coreografía del logo */}
+        <motion.div
+          className="absolute inset-x-0 top-[calc(50%+7.5rem)] z-30 flex flex-col items-center gap-3 px-4 sm:top-[calc(50%+9rem)] sm:flex-row sm:justify-center sm:gap-4"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.9, delay: 3.1, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <a
+            href="/descargas/mac"
+            className="inline-flex min-w-[220px] items-center justify-center gap-2.5 rounded-full border border-white/25 bg-gradient-to-b from-white/[0.12] to-white/[0.02] px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] text-[#f2f0ec] uppercase backdrop-blur-xl transition-all duration-500 hover:border-white/45 hover:from-white/[0.18] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]"
+            style={{
+              boxShadow:
+                "0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.18)",
+            }}
+          >
+            <AppleIcon className="h-4 w-4 shrink-0" />
+            Descargar para macOS
+          </a>
+          <a
+            href="/descargas/windows"
+            className="inline-flex min-w-[220px] items-center justify-center gap-2.5 rounded-full border border-white/15 bg-transparent px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] text-[#c8c5bf] uppercase backdrop-blur-xl transition-all duration-500 hover:border-white/30 hover:bg-white/[0.04] hover:text-[#f2f0ec]"
+            style={{
+              boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
+            }}
+          >
+            <WindowsIcon className="h-3.5 w-3.5 shrink-0" />
+            Descargar para Windows
+          </a>
+        </motion.div>
 
         {/* Fase 1 — Texto: aparece en el centro y desciende a bottom-10 */}
         <motion.h1
@@ -208,12 +267,12 @@ export default function Landing() {
           </p>
 
           <h2
-            className="text-3xl font-light tracking-[0.22em] text-[#f2f0ec] uppercase sm:text-4xl md:text-5xl"
+            className="text-3xl font-light tracking-[0.18em] text-[#f2f0ec] uppercase sm:text-4xl md:text-[2.75rem]"
             style={{
               fontFamily: "'Playfair Display', 'Times New Roman', Georgia, serif",
             }}
           >
-            Excellence Pro
+            Excellence Pro - Licencia
           </h2>
 
           <p
@@ -245,16 +304,22 @@ export default function Landing() {
             ))}
           </ul>
 
-          <button
-            type="button"
-            className="mt-16 inline-flex items-center justify-center rounded-full border border-white/25 bg-gradient-to-b from-white/[0.08] to-transparent px-10 py-3.5 text-[11px] font-medium tracking-[0.28em] text-[#f2f0ec] uppercase transition-all duration-500 hover:border-white/45 hover:from-white/[0.14] hover:shadow-[0_0_40px_rgba(255,255,255,0.08)]"
+          <a
+            href={LEMON_SQUEEZY_CHECKOUT}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-16 inline-flex items-center justify-center rounded-full border border-white/25 bg-gradient-to-b from-white/[0.08] to-transparent px-10 py-3.5 text-[11px] font-medium tracking-[0.2em] text-[#f2f0ec] uppercase transition-all duration-500 hover:border-white/45 hover:from-white/[0.14] hover:shadow-[0_0_40px_rgba(255,255,255,0.08)]"
             style={{
               boxShadow:
                 "0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.15)",
             }}
           >
-            Adquirir Licencia
-          </button>
+            Desbloquear Pro - $5.00/mes
+          </a>
+
+          <p className="mx-auto mt-5 max-w-xs text-xs font-light leading-relaxed tracking-wide text-[#6a6762]">
+            Recibirás tu clave de activación al instante por correo electrónico.
+          </p>
         </motion.div>
       </section>
 
