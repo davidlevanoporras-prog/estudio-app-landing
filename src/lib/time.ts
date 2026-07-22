@@ -71,12 +71,38 @@ export function formatGlobalTime(totalSeconds: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
+type DurationLabels = {
+  hoursMinutes: string;
+  minutes: string;
+  seconds: string;
+};
+
+const DEFAULT_DURATION_LABELS: DurationLabels = {
+  hoursMinutes: "{{h}}h {{m}}m",
+  minutes: "{{m}}m",
+  seconds: "{{s}}s",
+};
+
+function fillDuration(
+  template: string,
+  params: Record<string, string | number>,
+): string {
+  return template.replace(/{{\s*(\w+)\s*}}/g, (match, key: string) =>
+    key in params ? String(params[key]) : match,
+  );
+}
+
 /** Formato legible corto para tarjetas y barras (`2h 15m`, `15m`, `42s`). */
-export function formatDurationHuman(totalSeconds: number): string {
+export function formatDurationHuman(
+  totalSeconds: number,
+  labels: DurationLabels = DEFAULT_DURATION_LABELS,
+): string {
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
 
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m`;
-  return `${totalSeconds}s`;
+  if (hours > 0) {
+    return fillDuration(labels.hoursMinutes, { h: hours, m: minutes });
+  }
+  if (minutes > 0) return fillDuration(labels.minutes, { m: minutes });
+  return fillDuration(labels.seconds, { s: totalSeconds });
 }

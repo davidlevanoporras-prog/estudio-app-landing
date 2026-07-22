@@ -6,6 +6,7 @@ import {
   Library,
   Trophy,
 } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 import { useSimulatorStore } from "../store/simulatorStore";
 import SimulatorManager from "./SimulatorManager";
 
@@ -26,6 +27,7 @@ function shuffleOptions(options: string[]): string[] {
  * Simulador — biblioteca CRUD + sesión Interactive Cloze con bucle de castigo.
  */
 export default function SimulatorView() {
+  const { dict } = useLanguage();
   const currentSession = useSimulatorStore((s) => s.currentSession);
   const currentIndex = useSimulatorStore((s) => s.currentIndex);
   const score = useSimulatorStore((s) => s.score);
@@ -98,11 +100,10 @@ export default function SimulatorView() {
           </span>
           <div>
             <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              Simulador
+              {dict.simulator.title}
             </h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Organiza carpetas y mazos cloze, luego entrena con recuerdo
-              activo.
+              {dict.simulator.subtitle}
             </p>
           </div>
         </header>
@@ -135,10 +136,10 @@ export default function SimulatorView() {
               className="text-2xl font-semibold tracking-tight text-foreground md:text-3xl"
               style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              Entrenamiento Completado
+              {dict.simulator.trainingComplete}
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              Precisión:{" "}
+              {dict.simulator.precisionLabel}{" "}
               <span className="font-semibold tabular-nums text-primary">
                 {precision}%
               </span>
@@ -154,7 +155,7 @@ export default function SimulatorView() {
             className="premium-btn relative z-10 mt-2 flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-5 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
           >
             <Library className="h-4 w-4" strokeWidth={2} />
-            Volver a la biblioteca
+            {dict.simulator.backToLibrary}
           </button>
         </section>
       </div>
@@ -164,7 +165,7 @@ export default function SimulatorView() {
   if (!currentCard) {
     return (
       <div className="mx-auto flex h-full w-full max-w-3xl items-center justify-center text-sm text-muted-foreground">
-        Preparando sesión…
+        {dict.simulator.preparingSession}
       </div>
     );
   }
@@ -261,7 +262,7 @@ export default function SimulatorView() {
             className="premium-btn flex min-w-[12rem] items-center justify-center gap-2 rounded-lg border border-primary/60 bg-primary px-6 py-3 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card disabled:pointer-events-none disabled:opacity-35"
           >
             <Check className="h-4 w-4" strokeWidth={2.5} />
-            Comprobar
+            {dict.simulator.checkAnswer}
           </button>
         </div>
       </section>
@@ -284,6 +285,7 @@ function SessionHeader({
   queueLength?: number;
   onBack?: () => void;
 }) {
+  const { dict, t } = useLanguage();
   return (
     <header className="flex items-start justify-between gap-3">
       <div className="flex items-start gap-3">
@@ -292,7 +294,7 @@ function SessionHeader({
             type="button"
             onClick={onBack}
             className="premium-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-card-rest text-icon-muted transition-colors hover:border-primary hover:text-primary"
-            aria-label="Volver a la biblioteca"
+            aria-label={dict.simulator.backToLibrary}
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2} />
           </button>
@@ -306,7 +308,7 @@ function SessionHeader({
             {title}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Fallos se reencolan hasta dominarlos.
+            {dict.simulator.sessionHint}
           </p>
         </div>
       </div>
@@ -317,8 +319,8 @@ function SessionHeader({
           </p>
         ) : null}
         <p className="mt-0.5 tabular-nums text-primary">
-          Score {score}
-          {attempts > 0 ? ` · ${attempts} intentos` : ""}
+          {t(dict.simulator.scoreLabel, { score })}
+          {attempts > 0 ? t(dict.simulator.attemptsSuffix, { count: attempts }) : ""}
         </p>
       </div>
     </header>

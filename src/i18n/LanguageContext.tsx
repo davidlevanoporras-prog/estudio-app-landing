@@ -6,15 +6,16 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import i18n from "./i18n";
 import {
   interpolate,
+  LANGUAGE_STORAGE_KEY,
   languageOptions,
   translations,
   type Dictionary,
   type Language,
 } from "./dictionary";
 
-const LANGUAGE_STORAGE_KEY = "estudio-language";
 const DEFAULT_LANGUAGE: Language = "es";
 const LANGUAGE_IDS = languageOptions.map((option) => option.id);
 
@@ -33,18 +34,24 @@ function isValidLanguage(value: string | null): value is Language {
 }
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
-
-  useEffect(() => {
-    const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
-    if (isValidLanguage(stored)) {
-      setLanguage(stored);
+  const [language, setLanguageState] = useState<Language>(() => {
+    try {
+      const stored = localStorage.getItem(LANGUAGE_STORAGE_KEY);
+      if (isValidLanguage(stored)) return stored;
+    } catch {
+      /* ignore */
     }
-  }, []);
+    return DEFAULT_LANGUAGE;
+  });
+
+  const setLanguage = (next: Language) => {
+    setLanguageState(next);
+  };
 
   useEffect(() => {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     document.documentElement.setAttribute("lang", language);
+    void i18n.changeLanguage(language);
   }, [language]);
 
   const value = useMemo<LanguageContextValue>(
@@ -53,7 +60,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
       dict: translations[language],
       setLanguage,
       toggleLanguage: () =>
-        setLanguage((current) => {
+        setLanguageState((current) => {
           const currentIndex = LANGUAGE_IDS.indexOf(current);
           return LANGUAGE_IDS[(currentIndex + 1) % LANGUAGE_IDS.length];
         }),

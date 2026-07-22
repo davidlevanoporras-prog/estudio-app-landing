@@ -593,7 +593,7 @@ function ProfessorExamPanel() {
             dict.assistant.professor.generateButton
           ) : (
             <>
-              Generar con IA
+              {dict.assistant.professor.generateLocked}
               <Lock className="h-3.5 w-3.5" strokeWidth={2} aria-hidden="true" />
             </>
           )}

@@ -574,27 +574,22 @@ export default function ProfileView({
       {import.meta.env.DEV && (
         <section className="glow-card border border-rose-400/20 p-6">
           <h3 className="text-xs font-medium tracking-wider text-rose-300/80 uppercase">
-            Herramientas de desarrollo
+            {dict.profileDev.toolsTitle}
           </h3>
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            Vacía localStorage, IndexedDB de media y recarga la app. Irreversible
-            en este dispositivo.
+            {dict.profileDev.toolsBody}
           </p>
           <button
             type="button"
             onClick={() => {
-              if (
-                window.confirm(
-                  "¿Borrar todos los datos locales y recargar? Esta acción no se puede deshacer.",
-                )
-              ) {
+              if (window.confirm(dict.profileDev.resetConfirm)) {
                 void hardResetLocalData();
               }
             }}
             className="premium-btn mt-4 flex items-center gap-2 rounded-lg border border-rose-400/35 px-3 py-2 text-xs font-medium tracking-wide text-rose-300 uppercase transition-colors hover:border-rose-300/60 hover:text-rose-200"
           >
             <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-            Borrar todos los datos (Reset)
+            {dict.profileDev.resetButton}
           </button>
         </section>
       )}

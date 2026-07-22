@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { ExternalLink, Lock, Sparkles, X, Zap } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 import { useUserStore } from "../store/userStore";
 
 /** Placeholder de checkout — sustituir por link real de Stripe. */
@@ -13,6 +14,7 @@ type ProUpgradeModalProps = {
  * Modal de venta Pro — glassmorphism + activación por clave.
  */
 export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
+  const { dict } = useLanguage();
   const activatePro = useUserStore((s) => s.activatePro);
   const [key, setKey] = useState("");
   const [error, setError] = useState(false);
@@ -60,7 +62,7 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
           type="button"
           onClick={onClose}
           className="absolute top-4 right-4 z-10 rounded-md p-1 text-neutral-500 transition-colors hover:text-neutral-200"
-          aria-label="Cerrar"
+          aria-label={dict.proUpgrade.closeLabel}
         >
           <X className="h-4 w-4" strokeWidth={2} />
         </button>
@@ -75,21 +77,21 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
             className="text-xl font-semibold tracking-tight text-neutral-50"
             style={{ fontFamily: "'Playfair Display', serif" }}
           >
-            Desbloquea el Alto Rendimiento ⚡️
+            {dict.proUpgrade.title}
           </h2>
 
           <ul className="mt-4 space-y-2.5 text-sm text-neutral-300">
             <li className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} />
-              Generación de tarjetas con IA
+              {dict.proUpgrade.benefitAi}
             </li>
             <li className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} />
-              Análisis de PDFs ilimitado
+              {dict.proUpgrade.benefitPdf}
             </li>
             <li className="flex items-start gap-2">
               <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} />
-              Mapa de Calor Avanzado
+              {dict.proUpgrade.benefitHeatmap}
             </li>
           </ul>
 
@@ -98,7 +100,7 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
             onClick={handleCheckout}
             className="premium-btn mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/50 bg-amber-500/15 px-4 py-3 text-sm font-medium tracking-wide text-amber-100 uppercase transition-all duration-300 hover:border-amber-300/70 hover:bg-amber-500/25 hover:shadow-[0_0_24px_rgba(212,165,116,0.35)]"
           >
-            Obtener Licencia Pro ($4.99/mes)
+            {dict.proUpgrade.cta}
             <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
 
@@ -107,7 +109,7 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
               htmlFor="pro-license-key"
               className="text-[11px] font-medium tracking-wider text-neutral-500 uppercase"
             >
-              ¿Ya tienes una clave?
+              {dict.proUpgrade.keyLabel}
             </label>
             <div className="mt-2 flex gap-2">
               <input
@@ -118,7 +120,7 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
                   setKey(event.target.value);
                   setError(false);
                 }}
-                placeholder="EXCELLENCE-XXXX"
+                placeholder={dict.proUpgrade.keyPlaceholder}
                 spellCheck={false}
                 autoComplete="off"
                 className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-amber-400/40"
@@ -129,12 +131,12 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
                 className="premium-btn flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/50 bg-primary px-3 py-2.5 text-xs font-medium tracking-wide text-primary-foreground uppercase disabled:opacity-40"
               >
                 <Lock className="h-3 w-3" strokeWidth={2} />
-                Activar
+                {dict.proUpgrade.activate}
               </button>
             </div>
             {error && (
               <p className="mt-2 text-xs text-rose-300/90">
-                Introduce una clave válida para activar Pro.
+                {dict.proUpgrade.keyError}
               </p>
             )}
           </form>

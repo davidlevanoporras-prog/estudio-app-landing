@@ -29,6 +29,7 @@ import {
   isNativeFilePickerAvailable,
   pickPdfFiles,
 } from "../lib/nativeFiles";
+import { useLanguage } from "../i18n/LanguageContext";
 
 /**
  * Gestor de Fuentes — 100% local, sin servidor ni nube.
@@ -195,10 +196,6 @@ function formatFileSize(bytes: number): string {
   return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;
 }
 
-function fileCountLabel(count: number): string {
-  return count === 1 ? "1 archivo" : `${count} archivos`;
-}
-
 /** Ícono según el tipo MIME — imágenes, PDFs o genérico, mismo lenguaje visual en toda la vista. */
 function FileTypeIcon({ type, className }: { type: string; className: string }) {
   if (type.startsWith("image/")) {
@@ -243,6 +240,11 @@ type SearchResultEntry = {
 };
 
 export default function SourcesView() {
+  const { dict, t } = useLanguage();
+  const fileCountLabel = (count: number) =>
+    count === 1
+      ? dict.sources.fileCountOne
+      : t(dict.sources.fileCountMany, { count });
   const [folders, setFolders] = useState<Folder[]>([]);
   const [files, setFiles] = useState<SourceFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -346,7 +348,7 @@ export default function SourcesView() {
   const handleCreateFolder = () => {
     const folder: Folder = {
       id: createId("folder"),
-      name: "Nueva carpeta",
+      name: dict.sources.defaultFolderName,
       createdAt: Date.now(),
     };
     setFolders((current) => [folder, ...current]);
@@ -367,9 +369,10 @@ export default function SourcesView() {
 
   const handleDeleteFolder = (folder: Folder) => {
     const confirmed = window.confirm(
-      `¿Eliminar la carpeta "${folder.name}" y los ${fileCountLabel(
-        filesCountByFolder.get(folder.id) ?? 0,
-      )} que contiene?`,
+      t(dict.sources.deleteFolderConfirm, {
+        name: folder.name,
+        files: fileCountLabel(filesCountByFolder.get(folder.id) ?? 0),
+      }),
     );
     if (!confirmed) return;
 
@@ -505,7 +508,7 @@ export default function SourcesView() {
             <Library className="h-5 w-5" strokeWidth={2} />
           </div>
           <h2 className="sources-title text-xl font-semibold tracking-tight text-foreground">
-            Fuentes
+            {dict.sources.title}
           </h2>
         </div>
 
@@ -516,7 +519,7 @@ export default function SourcesView() {
             className="sources-new-folder-btn premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
           >
             <FolderPlus className="h-4 w-4" strokeWidth={2.5} />
-            Nueva carpeta
+            {dict.sources.newFolder}
           </button>
         )}
       </div>
@@ -528,15 +531,15 @@ export default function SourcesView() {
           type="text"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder="Buscar carpetas o archivos..."
+          placeholder={dict.sources.searchPlaceholder}
           className="min-w-0 flex-1 rounded-md bg-transparent py-0.5 text-sm text-foreground outline-none transition-colors duration-300 placeholder:text-muted-foreground"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={() => setSearchQuery("")}
-            aria-label="Limpiar búsqueda"
-            title="Limpiar búsqueda"
+            aria-label={dict.sources.clearSearch}
+            title={dict.sources.clearSearch}
             className="premium-btn flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
           >
             <X className="h-3.5 w-3.5" strokeWidth={2} />
@@ -547,7 +550,7 @@ export default function SourcesView() {
       {isLoading ? (
         <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
           <div className="h-8 w-8 animate-pulse rounded-full border-2 border-primary/40 border-t-primary" />
-          <p className="text-sm text-muted-foreground">Cargando tu bóveda local…</p>
+          <p className="text-sm text-muted-foreground">{dict.sources.loadingVault}</p>
         </div>
       ) : (
         <div
@@ -633,6 +636,7 @@ function PdfViewerModal({
   fileName: string;
   onClose: () => void;
 }) {
+  const { dict } = useLanguage();
   const isBlobUrl = filePath.startsWith("blob:");
   const iframeSrc = isBlobUrl ? filePath : convertFileSrc(filePath);
 
@@ -663,8 +667,8 @@ function PdfViewerModal({
           <button
             type="button"
             onClick={onClose}
-            aria-label="Cerrar visor"
-            title="Cerrar"
+            aria-label={dict.sources.closeViewer}
+            title={dict.sources.close}
             className="premium-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 transition-all duration-300 hover:bg-white/5 hover:text-neutral-100"
           >
             <X className="h-4 w-4" strokeWidth={2} />
@@ -714,6 +718,7 @@ function FolderGridView({
   onDeleteFolder,
   onCreateFolder,
 }: FolderGridViewProps) {
+  const { dict } = useLanguage();
   if (folders.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-card-rest py-24 text-center">
@@ -721,8 +726,7 @@ function FolderGridView({
           <FolderPlus className="h-6 w-6" strokeWidth={1.75} />
         </div>
         <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Aún no tienes carpetas. Crea la primera para empezar a guardar tus
-          fuentes de estudio.
+          {dict.sources.emptyVault}
         </p>
         <button
           type="button"
@@ -730,7 +734,7 @@ function FolderGridView({
             className="sources-new-folder-btn premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
           >
             <FolderPlus className="h-4 w-4" strokeWidth={2.5} />
-            Crear carpeta
+            {dict.sources.createFolder}
         </button>
       </div>
     );
@@ -786,6 +790,11 @@ function FolderCard({
   onCloseMenu,
   onDelete,
 }: FolderCardProps) {
+  const { dict, t } = useLanguage();
+  const fileCountLabel = (count: number) =>
+    count === 1
+      ? dict.sources.fileCountOne
+      : t(dict.sources.fileCountMany, { count });
   const [draftName, setDraftName] = useState(folder.name);
 
   useEffect(() => {
@@ -872,6 +881,7 @@ type FolderMenuProps = {
 };
 
 function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMenuProps) {
+  const { dict } = useLanguage();
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -897,7 +907,7 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
         }}
         aria-haspopup="menu"
         aria-expanded={isOpen}
-        aria-label="Opciones de la carpeta"
+        aria-label={dict.sources.folderOptions}
         className="premium-btn flex h-8 w-8 items-center justify-center rounded-md text-icon-muted transition-all duration-300 hover:text-primary hover:shadow-glow-sm"
       >
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
@@ -916,7 +926,7 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
           >
             <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            Renombrar
+            {dict.sources.rename}
           </button>
 
           <button
@@ -926,7 +936,7 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
             className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
           >
             <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            Eliminar
+            {dict.sources.delete}
           </button>
         </div>
       )}
@@ -959,6 +969,11 @@ function FolderDetailView({
   onDownloadFile,
   onDeleteFile,
 }: FolderDetailViewProps) {
+  const { dict } = useLanguage();
+  const fileCountLabel = (count: number) =>
+    count === 1
+      ? dict.sources.fileCountOne
+      : dict.sources.fileCountMany.replace("{{count}}", String(count));
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -966,8 +981,8 @@ function FolderDetailView({
           <button
             type="button"
             onClick={onBack}
-            aria-label="Volver a Fuentes"
-            title="Volver a Fuentes"
+            aria-label={dict.sources.backToSources}
+            title={dict.sources.backToSources}
             className="premium-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-card-rest text-icon-muted transition-all duration-300 hover:border-primary hover:text-primary"
           >
             <ArrowLeft className="h-4 w-4" strokeWidth={2} />
@@ -990,7 +1005,7 @@ function FolderDetailView({
           className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card disabled:opacity-50"
         >
           <Upload className="h-4 w-4" strokeWidth={2.5} />
-          Añadir archivo
+          {dict.sources.addFile}
         </button>
       </div>
 
@@ -1000,7 +1015,7 @@ function FolderDetailView({
             <Upload className="h-5 w-5" strokeWidth={1.75} />
           </div>
           <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Esta carpeta está vacía. Sube un PDF para empezar.
+            {dict.sources.emptyFolder}
           </p>
         </div>
       ) : (
@@ -1035,6 +1050,7 @@ function FileRow({
   onDownload,
   onDelete,
 }: FileRowProps) {
+  const { dict } = useLanguage();
   const canOpen = isPdfSource(file);
 
   return (
@@ -1080,8 +1096,8 @@ function FileRow({
           event.stopPropagation();
           onDownload();
         }}
-        aria-label={`Descargar ${file.name}`}
-        title="Descargar"
+        aria-label={`${dict.sources.download} ${file.name}`}
+        title={dict.sources.download}
         className="premium-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-icon-muted transition-all duration-300 hover:text-primary hover:shadow-glow-sm"
       >
         <Download className="h-4 w-4" strokeWidth={2} />
@@ -1093,8 +1109,8 @@ function FileRow({
           event.stopPropagation();
           onDelete();
         }}
-        aria-label={`Eliminar ${file.name}`}
-        title="Eliminar"
+        aria-label={`${dict.sources.delete} ${file.name}`}
+        title={dict.sources.delete}
         className="premium-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-icon-muted transition-all duration-300 hover:text-rose-300 hover:shadow-[0_0_12px_rgba(244,63,94,0.25)]"
       >
         <Trash2 className="h-4 w-4" strokeWidth={2} />
@@ -1124,6 +1140,7 @@ function SearchResultsView({
   onDownloadFile,
   onDeleteFile,
 }: SearchResultsViewProps) {
+  const { dict } = useLanguage();
   if (results.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
@@ -1131,7 +1148,7 @@ function SearchResultsView({
           <Search className="h-5 w-5" strokeWidth={1.75} />
         </div>
         <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-          Sin resultados para <span className="text-foreground">“{query}”</span>.
+          {dict.sources.noResultsFor.replace("{{query}}", query)}
         </p>
       </div>
     );

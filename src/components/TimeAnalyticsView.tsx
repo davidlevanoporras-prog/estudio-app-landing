@@ -115,7 +115,7 @@ export default function TimeAnalyticsView({ decks, globalTime }: TimeAnalyticsVi
                 >
                   <div className="flex h-24 w-full items-end">
                     <div
-                      title={formatDurationHuman(day.seconds)}
+                      title={formatDurationHuman(day.seconds, dict.time)}
                       style={{ height: `${heightPercent}%` }}
                       className={[
                         "w-full rounded-t-md transition-all duration-500",
@@ -170,7 +170,7 @@ export default function TimeAnalyticsView({ decks, globalTime }: TimeAnalyticsVi
                       </p>
                     </div>
                     <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">
-                      {formatDurationHuman(seconds)}
+                      {formatDurationHuman(seconds, dict.time)}
                     </span>
                   </div>
 

@@ -10,6 +10,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
+import { useLanguage } from "../i18n/LanguageContext";
 import { useLibraryStore } from "../store/libraryStore";
 import { useSimulatorStore } from "../store/simulatorStore";
 import type { ClozeCard, SimulationDeck } from "../types/simulator";
@@ -25,6 +26,7 @@ type Selection =
  * árbol de carpetas/mazos (izq.) + editor CRUD de cloze (der.).
  */
 export default function SimulatorManager() {
+  const { dict } = useLanguage();
   const folders = useLibraryStore((s) => s.folders);
   const decks = useLibraryStore((s) => s.decks);
   const createFolder = useLibraryStore((s) => s.createFolder);
@@ -67,13 +69,13 @@ export default function SimulatorManager() {
   };
 
   const handleCreateFolder = () => {
-    const id = createFolder("Nueva carpeta");
+    const id = createFolder(dict.simulator.defaultFolderName);
     setExpandedFolders((prev) => new Set(prev).add(id));
     setSelection({ kind: "folder", id });
   };
 
   const handleCreateDeck = (folderId: string | null) => {
-    const id = createDeck("Nuevo mazo", folderId);
+    const id = createDeck(dict.simulator.defaultDeckName, folderId);
     setSelection({ kind: "deck", id });
   };
 
@@ -88,12 +90,12 @@ export default function SimulatorManager() {
       <aside className="flex w-full max-w-[16rem] shrink-0 flex-col border-r border-white/10 md:max-w-[18rem]">
         <div className="flex items-center justify-between gap-2 border-b border-white/10 px-3 py-3">
           <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-            Biblioteca
+            {dict.simulator.library}
           </p>
           <div className="flex items-center gap-1">
             <button
               type="button"
-              title="Nueva carpeta"
+              title={dict.simulator.newFolder}
               onClick={handleCreateFolder}
               className="premium-btn flex h-7 w-7 items-center justify-center rounded-md text-icon-muted transition-colors hover:bg-white/5 hover:text-primary"
             >
@@ -101,7 +103,7 @@ export default function SimulatorManager() {
             </button>
             <button
               type="button"
-              title="Nuevo mazo en la raíz"
+              title={dict.simulator.newDeckRoot}
               onClick={() => handleCreateDeck(null)}
               className="premium-btn flex h-7 w-7 items-center justify-center rounded-md text-icon-muted transition-colors hover:bg-white/5 hover:text-primary"
             >
@@ -149,7 +151,7 @@ export default function SimulatorManager() {
                   </button>
                   <button
                     type="button"
-                    title="Mazo en esta carpeta"
+                    title={dict.simulator.newDeckInFolder}
                     onClick={() => handleCreateDeck(folder.id)}
                     className="invisible flex h-6 w-6 items-center justify-center rounded text-icon-muted group-hover:visible hover:text-primary"
                   >
@@ -173,7 +175,7 @@ export default function SimulatorManager() {
                     ))}
                     {childDecks.length === 0 && (
                       <p className="px-2 py-1 text-[11px] text-muted-foreground">
-                        Sin mazos
+                        {dict.simulator.emptyDecks}
                       </p>
                     )}
                   </div>
@@ -185,7 +187,7 @@ export default function SimulatorManager() {
           {orphanDecks.length > 0 && (
             <div className="pt-2">
               <p className="px-2 pb-1 text-[10px] font-medium tracking-wider text-muted-foreground/80 uppercase">
-                Sin carpeta
+                {dict.simulator.noFolder}
               </p>
               {orphanDecks.map((deck) => (
                 <DeckRow
@@ -234,7 +236,7 @@ export default function SimulatorManager() {
           <div className="flex flex-1 flex-col items-center justify-center gap-2 px-6 text-center">
             <Layers className="h-8 w-8 text-icon-muted" strokeWidth={1.5} />
             <p className="text-sm text-muted-foreground">
-              Selecciona un mazo para editarlo, o crea una carpeta / mazo nuevo.
+              {dict.simulator.selectDeckHint}
             </p>
           </div>
         )}
@@ -281,6 +283,7 @@ function FolderPane({
   onDelete: () => void;
   onCreateDeck: () => void;
 }) {
+  const { dict } = useLanguage();
   const folder = useLibraryStore((s) =>
     s.folders.find((f) => f.id === folderId),
   );
@@ -302,7 +305,7 @@ function FolderPane({
           className="premium-btn flex items-center gap-2 rounded-lg border border-primary/50 bg-primary/10 px-3 py-2 text-xs font-medium text-primary uppercase"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={2} />
-          Mazo
+          {dict.simulator.deckShort}
         </button>
         <button
           type="button"
@@ -310,11 +313,11 @@ function FolderPane({
           className="premium-btn flex items-center gap-2 rounded-lg border border-rose-400/30 px-3 py-2 text-xs font-medium text-rose-300/90 uppercase"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-          Eliminar carpeta
+          {dict.simulator.deleteFolder}
         </button>
       </div>
       <p className="text-sm text-muted-foreground">
-        Los mazos de esta carpeta aparecerán en el árbol de la izquierda.
+        {dict.simulator.folderHelp}
       </p>
     </div>
   );
@@ -341,6 +344,7 @@ function DeckEditor({
   onDeleteCard: (cardId: string) => void;
   onTrain: () => void;
 }) {
+  const { dict, t } = useLanguage();
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
@@ -357,7 +361,7 @@ function DeckEditor({
             }
             className="rounded-md border border-card-rest bg-background/50 px-2 py-1 text-xs text-muted-foreground outline-none focus:border-primary"
           >
-            <option value="">Sin carpeta</option>
+            <option value="">{dict.simulator.noFolder}</option>
             {folders.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
@@ -373,7 +377,7 @@ function DeckEditor({
             className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-3 py-2 text-xs font-medium tracking-wide text-primary-foreground uppercase disabled:opacity-40"
           >
             <Play className="h-3.5 w-3.5" strokeWidth={2} />
-            Entrenar
+            {dict.simulator.train}
           </button>
           <button
             type="button"
@@ -381,7 +385,7 @@ function DeckEditor({
             className="premium-btn flex items-center gap-2 rounded-lg border border-rose-400/30 px-3 py-2 text-xs font-medium text-rose-300/90 uppercase"
           >
             <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            Borrar
+            {dict.simulator.delete}
           </button>
         </div>
       </div>
@@ -396,14 +400,14 @@ function DeckEditor({
           >
             <div className="mb-3 flex items-center justify-between">
               <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-                Tarjeta {index + 1}
+                {t(dict.simulator.cardLabel, { n: index + 1 })}
               </p>
               <button
                 type="button"
                 onClick={() => onDeleteCard(card.id)}
                 className="text-xs text-muted-foreground hover:text-rose-300"
               >
-                Eliminar
+                {dict.simulator.remove}
               </button>
             </div>
             <p
@@ -417,11 +421,13 @@ function DeckEditor({
               {card.textAfter}
             </p>
             <p className="mt-2 text-[11px] text-muted-foreground">
-              Distractores: {card.distractors.join(" · ") || "—"}
+              {t(dict.simulator.distractorsLabel, {
+                list: card.distractors.join(" · ") || "—",
+              })}
             </p>
             <div className="mt-3 grid gap-2 border-t border-white/5 pt-3">
               <label className="block text-xs text-muted-foreground">
-                Editar respuesta
+                {dict.simulator.editAnswer}
                 <input
                   value={card.answer}
                   onChange={(e) =>
@@ -431,7 +437,7 @@ function DeckEditor({
                 />
               </label>
               <label className="block text-xs text-muted-foreground">
-                Distractores (coma)
+                {dict.simulator.distractorsComma}
                 <input
                   value={card.distractors.join(", ")}
                   onChange={(e) =>
@@ -461,6 +467,7 @@ function ManualClozeForm({
 }: {
   onSave: (card: Partial<ClozeCard>) => void;
 }) {
+  const { dict, t } = useLanguage();
   const [sentence, setSentence] = useState("");
   const [distractors, setDistractors] = useState<[string, string, string]>([
     "",
@@ -495,7 +502,7 @@ function ManualClozeForm({
     <div className="rounded-xl border border-white/10 bg-[#0B0D0F]/55 p-4 shadow-glow-card backdrop-blur-md">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-          Nueva tarjeta manual
+          {dict.simulator.newManualCard}
         </p>
         <button
           type="button"
@@ -504,7 +511,7 @@ function ManualClozeForm({
           className="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-xs text-neutral-500 transition-colors duration-300 hover:text-neutral-200"
         >
           <CircleHelp className="h-3.5 w-3.5" strokeWidth={2} />
-          Ayuda de Sintaxis
+          {dict.simulator.syntaxHelp}
         </button>
       </div>
 
@@ -518,17 +525,16 @@ function ManualClozeForm({
       >
         <div className="rounded-xl border border-white/10 bg-[#0B0D0F]/75 p-3.5 shadow-glow-card backdrop-blur-xl">
           <p className="text-[11px] font-semibold tracking-wide text-neutral-200">
-            Cómo crear tarjetas de entrenamiento
+            {dict.simulator.helpTitle}
           </p>
           <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
-            Envuelve la palabra o frase que deseas ocultar utilizando dobles
-            corchetes.
+            {dict.simulator.helpBody}
           </p>
           <code className="mt-2.5 block rounded-lg border border-white/10 bg-black/40 px-3 py-2 font-mono text-[11px] leading-relaxed text-neutral-300">
-            El hueso más largo del cuerpo es el [[fémur]].
+            {dict.simulator.helpExample}
           </code>
           <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground/90">
-            Añade las opciones falsas en las casillas de distractores debajo.
+            {dict.simulator.helpDistractors}
           </p>
         </div>
       </div>
@@ -540,7 +546,7 @@ function ManualClozeForm({
           if (syntaxError) setSyntaxError(false);
         }}
         rows={4}
-        placeholder="Escribe tu frase y encierra la respuesta entre dobles corchetes. Ej: El tejido principal del corazón es el [[miocardio]]."
+        placeholder={dict.simulator.sentencePlaceholder}
         aria-invalid={syntaxError}
         className={[
           "mt-3 w-full resize-y rounded-xl border bg-white/[0.04] px-4 py-3 text-sm leading-relaxed text-foreground outline-none transition-colors placeholder:text-muted-foreground/70",
@@ -555,13 +561,13 @@ function ManualClozeForm({
           role="alert"
           className="mt-2 text-xs font-medium text-rose-300/90"
         >
-          Sintaxis incompleta: envuelve la respuesta en [[ ]]
+          {dict.simulator.syntaxError}
         </p>
       )}
 
       <div className="mt-3 rounded-xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-4">
         <p className="mb-2 text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-          Vista previa
+          {dict.simulator.preview}
         </p>
         {parsed ? (
           <p
@@ -576,14 +582,14 @@ function ManualClozeForm({
           </p>
         ) : (
           <p className="text-center text-sm text-muted-foreground">
-            Encierra la respuesta entre [[dobles corchetes]] para ver el hueco.
+            {dict.simulator.previewEmpty}
           </p>
         )}
       </div>
 
       <div className="mt-4">
         <p className="mb-2 text-[11px] font-medium tracking-wider text-muted-foreground uppercase">
-          Distractores
+          {dict.simulator.distractors}
         </p>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {distractors.map((value, index) => (
@@ -595,7 +601,7 @@ function ManualClozeForm({
                 next[index] = e.target.value;
                 setDistractors(next);
               }}
-              placeholder={`Opción falsa ${index + 1}`}
+              placeholder={t(dict.simulator.falseOption, { n: index + 1 })}
               className="rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary/45 hover:border-white/20"
             />
           ))}
@@ -609,7 +615,7 @@ function ManualClozeForm({
         className="premium-btn mt-4 flex w-full items-center justify-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card disabled:pointer-events-none disabled:opacity-35"
       >
         <Save className="h-4 w-4" strokeWidth={2} />
-        Guardar Tarjeta
+        {dict.simulator.saveCard}
       </button>
     </div>
   );
