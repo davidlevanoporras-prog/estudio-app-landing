@@ -1,5 +1,9 @@
+import { useState, type MouseEvent } from "react";
 import { motion, type Variants } from "framer-motion";
 import { Brain } from "lucide-react";
+
+const MAC_DOWNLOAD_URL =
+  "https://github.com/davidlevanoporras-prog/estudio-app-landing/releases/download/v1.0.0/Excellence.Absolue_1.0.0_aarch64.dmg";
 
 const LEMON_SQUEEZY_CHECKOUT =
   "https://excellenceabsolue.lemonsqueezy.com/checkout/buy/d967ee67-1653-4c34-8948-18fd57f41366";
@@ -53,6 +57,14 @@ function WindowsIcon({ className }: { className?: string }) {
  * Hero: descargas gratuitas. Debajo: ciencia + muro Pro (Lemon Squeezy).
  */
 export default function Landing() {
+  const [windowsNotice, setWindowsNotice] = useState(false);
+
+  const handleWindowsClick = (event: MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    setWindowsNotice(true);
+    window.setTimeout(() => setWindowsNotice(false), 4200);
+  };
+
   return (
     <div className="relative w-full bg-[#050505] text-[#e8e6e3]">
       {/* ═══ HERO — 100vh, coreografía + CTAs de descarga ═══ */}
@@ -93,7 +105,9 @@ export default function Landing() {
           transition={{ duration: 0.9, delay: 3.1, ease: [0.22, 1, 0.36, 1] }}
         >
           <a
-            href="/descargas/mac"
+            href={MAC_DOWNLOAD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
             className="inline-flex min-w-[220px] items-center justify-center gap-2.5 rounded-full border border-white/25 bg-gradient-to-b from-white/[0.12] to-white/[0.02] px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] text-[#f2f0ec] uppercase backdrop-blur-xl transition-all duration-500 hover:border-white/45 hover:from-white/[0.18] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]"
             style={{
               boxShadow:
@@ -104,7 +118,8 @@ export default function Landing() {
             Descargar para macOS
           </a>
           <a
-            href="/descargas/windows"
+            href="#windows-coming-soon"
+            onClick={handleWindowsClick}
             className="inline-flex min-w-[220px] items-center justify-center gap-2.5 rounded-full border border-white/15 bg-transparent px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] text-[#c8c5bf] uppercase backdrop-blur-xl transition-all duration-500 hover:border-white/30 hover:bg-white/[0.04] hover:text-[#f2f0ec]"
             style={{
               boxShadow: "inset 0 1px 0 rgba(255,255,255,0.06)",
@@ -115,6 +130,14 @@ export default function Landing() {
           </a>
         </motion.div>
 
+        {windowsNotice ? (
+          <p
+            role="status"
+            className="absolute inset-x-0 top-[calc(50%+14rem)] z-30 px-4 text-center text-xs font-light tracking-wide text-[#8a8782] sm:top-[calc(50%+13.5rem)]"
+          >
+            Versión para Windows en camino. Disponible próximamente.
+          </p>
+        ) : null}
         {/* Fase 1 — Texto: aparece en el centro y desciende a bottom-10 */}
         <motion.h1
           className="pointer-events-none absolute inset-x-0 z-20 px-4 text-center text-2xl font-light tracking-[0.28em] text-[#f2f0ec] uppercase sm:text-4xl md:text-5xl lg:text-6xl"
