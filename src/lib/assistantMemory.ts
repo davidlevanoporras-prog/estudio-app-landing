@@ -1,4 +1,5 @@
 import { getVaultValue, isVaultAvailable, setAndPersist } from "./appStore";
+import { getSecureJSON, setSecureJSON } from "./secureStorage";
 import { VAULT_KEYS } from "./vaultKeys";
 
 /**
@@ -82,9 +83,8 @@ function normalizeMemory(raw: AssistantMemory): AssistantMemory {
 
 function readBrowserFallback(): AssistantMemory | null {
   try {
-    const raw = localStorage.getItem(BROWSER_FALLBACK_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as AssistantMemory;
+    const parsed = getSecureJSON<AssistantMemory>(BROWSER_FALLBACK_KEY);
+    if (!parsed) return null;
     return normalizeMemory(parsed);
   } catch {
     return null;
@@ -93,7 +93,7 @@ function readBrowserFallback(): AssistantMemory | null {
 
 function writeBrowserFallback(memory: AssistantMemory): void {
   try {
-    localStorage.setItem(BROWSER_FALLBACK_KEY, JSON.stringify(memory));
+    setSecureJSON(BROWSER_FALLBACK_KEY, memory);
   } catch {
     /* cuota / private mode — la memoria queda solo en RAM esta sesión */
   }

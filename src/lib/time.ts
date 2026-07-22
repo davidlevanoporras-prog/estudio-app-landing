@@ -1,3 +1,5 @@
+import { getSecureJSON, setSecureJSON } from "./secureStorage";
+
 const GLOBAL_TIMER_STORAGE_KEY = "estudio-global-timer";
 
 type PersistedTimerState = {
@@ -29,11 +31,10 @@ function isPersistedTimerState(value: unknown): value is PersistedTimerState {
  */
 export function loadGlobalTimer(): GlobalTimerSnapshot {
   try {
-    const raw = localStorage.getItem(GLOBAL_TIMER_STORAGE_KEY);
-    if (!raw) return { elapsedSeconds: 0, isPaused: false };
-
-    const parsed = JSON.parse(raw);
-    if (!isPersistedTimerState(parsed)) return { elapsedSeconds: 0, isPaused: false };
+    const parsed = getSecureJSON<unknown>(GLOBAL_TIMER_STORAGE_KEY);
+    if (!parsed || !isPersistedTimerState(parsed)) {
+      return { elapsedSeconds: 0, isPaused: false };
+    }
 
     if (parsed.isPaused || !parsed.lastTimestamp) {
       return { elapsedSeconds: parsed.elapsedSeconds, isPaused: parsed.isPaused };
@@ -56,7 +57,7 @@ export function saveGlobalTimer(elapsedSeconds: number, isPaused: boolean): void
       isPaused,
       lastTimestamp: Date.now(),
     };
-    localStorage.setItem(GLOBAL_TIMER_STORAGE_KEY, JSON.stringify(state));
+    setSecureJSON(GLOBAL_TIMER_STORAGE_KEY, state);
   } catch {
     /* localStorage no disponible — el cronómetro sigue corriendo en memoria esta sesión */
   }

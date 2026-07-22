@@ -30,6 +30,7 @@ import {
   pickPdfFiles,
 } from "../lib/nativeFiles";
 import { useLanguage } from "../i18n/LanguageContext";
+import { PortalMenu } from "./PortalMenu";
 
 /**
  * Gestor de Fuentes — 100% local, sin servidor ni nube.
@@ -811,7 +812,10 @@ function FolderCard({
       onClick={() => {
         if (!isRenaming) onOpen();
       }}
-      className="glow-card group relative flex cursor-pointer flex-col gap-4 p-5 transition-all duration-300"
+      className={[
+        "glow-card group relative flex cursor-pointer flex-col gap-4 p-5 transition-all duration-300",
+        isMenuOpen ? "z-[40]" : "z-0",
+      ].join(" ")}
     >
       <div className="flex items-center justify-between gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary transition-all duration-300 group-hover:border-primary group-hover:shadow-glow-sm">
@@ -882,24 +886,12 @@ type FolderMenuProps = {
 
 function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMenuProps) {
   const { dict } = useLanguage();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [isOpen, onClose]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div ref={containerRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <button
+        ref={buttonRef}
         type="button"
         onClick={(event) => {
           event.stopPropagation();
@@ -913,33 +905,38 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
       </button>
 
-      {isOpen && (
-        <div
-          role="menu"
-          onClick={(event) => event.stopPropagation()}
-          className="absolute right-0 top-full z-10 mt-2 w-40 rounded-lg border border-wenge-border-subtle bg-cuervo p-1.5 shadow-glow-card"
+      <PortalMenu
+        open={isOpen}
+        anchorRef={buttonRef}
+        onClose={onClose}
+        className="w-40 rounded-lg border border-wenge-border-subtle bg-cuervo p-1.5 shadow-glow-card"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(event) => {
+            event.stopPropagation();
+            onRename(event);
+          }}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onRename}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
-          >
-            <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.sources.rename}
-          </button>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.sources.rename}
+        </button>
 
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onDelete}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
-          >
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.sources.delete}
-          </button>
-        </div>
-      )}
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(event);
+          }}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.sources.delete}
+        </button>
+      </PortalMenu>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import type {
   Folder,
   SimulationDeck,
 } from "../types/simulator";
+import { getSecureJSON, setSecureJSON } from "../lib/secureStorage";
 
 const LIBRARY_STORAGE_KEY = "excellence-simulator-library";
 
@@ -12,78 +13,35 @@ type LibrarySnapshot = {
   decks: SimulationDeck[];
 };
 
-const SEED_CARDS: ClozeCard[] = [
-  {
-    id: "cloze-facial",
-    textBefore: "El nervio",
-    textAfter:
-      "es el principal responsable de la inervación motora de la cara.",
-    answer: "Facial",
-    distractors: ["Trigémino", "Vago", "Hipogloso"],
-  },
-  {
-    id: "cloze-iliopsoas",
-    textBefore: "El músculo",
-    textAfter: "es el principal flexor de la cadera.",
-    answer: "Iliopsoas",
-    distractors: ["Glúteo mayor", "Cuádriceps", "Sartorio"],
-  },
-  {
-    id: "cloze-metafase",
-    textBefore: "En la fase de",
-    textAfter: "los cromosomas se alinean en el ecuador de la célula.",
-    answer: "Metafase",
-    distractors: ["Profase", "Anafase", "Telofase"],
-  },
-  {
-    id: "cloze-ohm",
-    textBefore: "Según la ley de Ohm, V =",
-    textAfter: ".",
-    answer: "I × R",
-    distractors: ["I / R", "I + R", "R / I"],
-  },
-];
-
 function createId(prefix: string): string {
   return `${prefix}-${crypto.randomUUID()}`;
 }
 
-function seedLibrary(): LibrarySnapshot {
-  const folderId = createId("folder");
-  return {
-    folders: [{ id: folderId, name: "Anatomía", parentId: null }],
-    decks: [
-      {
-        id: createId("deck"),
-        title: "Nervios craneales",
-        folderId,
-        cards: SEED_CARDS,
-      },
-    ],
-  };
+/** FTUE: biblioteca vacía — sin carpetas ni mazos de demostración. */
+function emptyLibrary(): LibrarySnapshot {
+  return { folders: [], decks: [] };
 }
 
 function loadSnapshot(): LibrarySnapshot {
   try {
-    const raw = localStorage.getItem(LIBRARY_STORAGE_KEY);
-    if (!raw) return seedLibrary();
-    const parsed = JSON.parse(raw) as Partial<LibrarySnapshot>;
+    const parsed = getSecureJSON<Partial<LibrarySnapshot>>(LIBRARY_STORAGE_KEY);
+    if (!parsed) return emptyLibrary();
     if (!Array.isArray(parsed.folders) || !Array.isArray(parsed.decks)) {
-      return seedLibrary();
+      return emptyLibrary();
     }
     return {
       folders: parsed.folders as Folder[],
       decks: parsed.decks as SimulationDeck[],
     };
   } catch {
-    return seedLibrary();
+    return emptyLibrary();
   }
 }
 
 function persistSnapshot(folders: Folder[], decks: SimulationDeck[]): void {
   try {
     const payload: LibrarySnapshot = { folders, decks };
-    localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(payload));
+    setSecureJSON(LIBRARY_STORAGE_KEY, payload);
   } catch (error) {
     console.error("[libraryStore] No se pudo persistir la biblioteca:", error);
   }
@@ -124,7 +82,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
     const id = createId("folder");
     const folder: Folder = {
       id,
-      name: name.trim() || "Nueva carpeta",
+      name: name.trim() || "New folder",
       parentId,
     };
     const folders = [...get().folders, folder];
@@ -164,7 +122,7 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
     const id = createId("deck");
     const deck: SimulationDeck = {
       id,
-      title: title.trim() || "Nuevo mazo",
+      title: title.trim() || "New deck",
       folderId,
       cards: [],
     };
@@ -204,10 +162,10 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
   addCard: (deckId, card) => {
     const next: ClozeCard = {
       id: createId("card"),
-      textBefore: card?.textBefore ?? "Texto antes del hueco",
-      textAfter: card?.textAfter ?? "texto después.",
-      answer: card?.answer ?? "Respuesta",
-      distractors: card?.distractors ?? ["Opción A", "Opción B", "Opción C"],
+      textBefore: card?.textBefore ?? "",
+      textAfter: card?.textAfter ?? "",
+      answer: card?.answer ?? "",
+      distractors: card?.distractors ?? [],
     };
     const decks = get().decks.map((deck) =>
       deck.id === deckId ? { ...deck, cards: [...deck.cards, next] } : deck,

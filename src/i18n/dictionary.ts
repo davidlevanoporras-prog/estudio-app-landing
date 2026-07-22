@@ -25,7 +25,6 @@ export type Dictionary = {
     analytics: string;
     sources: string;
     challenges: string;
-    arguments: string;
     simulator: string;
     assistant: string;
   };
@@ -153,6 +152,8 @@ export type Dictionary = {
     deleteConfirmTitle: string;
     cancelLabel: string;
     deckMenuLabel: string;
+    cardCountOne: string;
+    cardCountMany: string;
   };
   comingSoon: {
     title: string;
@@ -388,6 +389,13 @@ export type Dictionary = {
     toolsBody: string;
     resetConfirm: string;
     resetButton: string;
+  };
+  emptyStates: {
+    noDecks: string;
+    noMetrics: string;
+    noChallenges: string;
+    createFirstDeck: string;
+    startSessionForMetrics: string;
   };
 };
 

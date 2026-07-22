@@ -58,19 +58,12 @@ const PANEL_BG = "#12161c";
 const MODE_DOT_INQUISITOR = "#b45309";
 const MODE_DOT_PROFESSOR = "#a8a29e";
 
-/** PDFs de demostración cuando Fuentes aún no tiene documentos — apunta conceptualmente a esa lógica. */
-const DEMO_PDFS: SourceFileMeta[] = [
-  {
-    id: "demo-neuro",
-    name: "Neuroanatomía Clínica — Cap. 4.pdf",
-    type: "application/pdf",
-  },
-  {
-    id: "demo-fisio",
-    name: "Fisiopatología del SNA.pdf",
-    type: "application/pdf",
-  },
-];
+/** Placeholder universal (EN) — no se persiste como historial de conversación. */
+const SYSTEM_READY_MESSAGE =
+  "System ready. Awaiting your API key to initialize cognitive protocols.";
+
+/** Sin PDFs de demostración — FTUE zero-data. */
+const EMPTY_PDFS: SourceFileMeta[] = [];
 
 let messageIdSequence = 0;
 function nextMessageId(): string {
@@ -99,124 +92,33 @@ function fromVaultMessages(messages: AssistantChatMessage[]): ChatMessage[] {
 }
 
 function buildMockExam(examType: ExamType): ExamQuestion[] {
+  // Placeholders EN genéricos — sin contenido clínico en español hardcodeado.
   if (examType === "clinical") {
     return [
       {
         id: "q1",
-        prompt:
-          "Un paciente presenta hiperreflexia, Babinski positivo y paresia espástica en hemicuerpo derecho. ¿Cuál es la localización más probable de la lesión?",
-        options: [
-          "Neurona motora inferior izquierda",
-          "Haz corticoespinal izquierdo (supranuclear)",
-          "Nervio periférico derecho",
-          "Placa neuromuscular",
-        ],
-        correctIndex: 1,
-      },
-      {
-        id: "q2",
-        prompt:
-          "En el mismo caso, ¿qué hallazgo esperaría en el tono muscular del lado afecto?",
-        options: [
-          "Hipotonia flácida",
-          "Hipertonía espástica",
-          "Fasciculaciones prominentes",
-          "Areflexia total",
-        ],
-        correctIndex: 1,
-      },
-      {
-        id: "q3",
-        prompt:
-          "Si la lesión elimina el control inhibitorio cortical sobre la médula, ¿cómo reaccionan los reflejos miotáticos?",
-        options: [
-          "Se abolirán",
-          "Se atenuarán levemente",
-          "Se exagerarán (hiperreflexia)",
-          "Permanecerán sin cambios",
-        ],
-        correctIndex: 2,
+        prompt: "Clinical case placeholder — connect your API key for live generation.",
+        options: ["Option A", "Option B", "Option C", "Option D"],
+        correctIndex: 0,
       },
     ];
   }
-
   if (examType === "active") {
     return [
       {
         id: "q1",
-        prompt:
-          "Recuerdo activo: nombre el signo patognomónico de lesión de neurona motora superior en el pie.",
-        options: [
-          "Signo de Babinski",
-          "Signo de Tinel",
-          "Signo de Chvostek",
-          "Signo de Romberg",
-        ],
+        prompt: "Active recall placeholder — connect your API key for live generation.",
+        options: ["Option A", "Option B", "Option C", "Option D"],
         correctIndex: 0,
-      },
-      {
-        id: "q2",
-        prompt:
-          "Recuerdo activo: el tracto responsable del control voluntario fino de la musculatura distal es…",
-        options: [
-          "Haz espinocerebeloso",
-          "Haz corticoespinal (piramidal)",
-          "Haz espinotalámico lateral",
-          "Haz vestibuloespinal",
-        ],
-        correctIndex: 1,
-      },
-      {
-        id: "q3",
-        prompt:
-          "Recuerdo activo: la debilidad en UMN suele acompañarse de…",
-        options: [
-          "Atrofia rápida y fasciculaciones",
-          "Espasticidad e hiperreflexia",
-          "Hipotonia y arreflexia",
-          "Ptosis y diplopía",
-        ],
-        correctIndex: 1,
       },
     ];
   }
-
-  // multiple (opción múltiple clásica)
   return [
     {
       id: "q1",
-      prompt:
-        "¿Cuál de las siguientes NO es característica de una lesión de neurona motora superior?",
-      options: [
-        "Babinski positivo",
-        "Hiperreflexia",
-        "Fasciculaciones",
-        "Espasticidad",
-      ],
-      correctIndex: 2,
-    },
-    {
-      id: "q2",
-      prompt: "El reflejo miotático depende principalmente de…",
-      options: [
-        "Husos neuromusculares y arco mono/oligosináptico",
-        "Nociceptores cutáneos",
-        "Corpúsculos de Pacini",
-        "Células de Schwann",
-      ],
+      prompt: "Multiple-choice placeholder — connect your API key for live generation.",
+      options: ["Option A", "Option B", "Option C", "Option D"],
       correctIndex: 0,
-    },
-    {
-      id: "q3",
-      prompt:
-        "Una lesión cortical que libera a la médula del control inhibitorio tiende a producir…",
-      options: [
-        "Parálisis flácida irreversible",
-        "Hiperreflexia y clonus",
-        "Anestesia en guante y calcetín",
-        "Ptosis bilateral",
-      ],
-      correctIndex: 1,
     },
   ];
 }
@@ -277,35 +179,23 @@ function InquisitorChatPanel() {
       const { session } = await getOrCreateActiveSession("inquisidor");
       if (!isMounted) return;
 
-      const stored = fromVaultMessages(session.messages);
-      if (stored.length > 0) {
-        setMessages(stored);
-      } else {
-        const seed: ChatMessage[] = [
-          {
-            id: "mock-user",
-            role: "user",
-            content: dict.assistant.mockUserMessage,
-          },
-          {
-            id: "mock-assistant",
-            role: "assistant",
-            content: dict.assistant.mockAssistantMessage,
-          },
-        ];
-        setMessages(seed);
-        void persistSessionMessages(session.id, toVaultMessages(seed));
-      }
+      const stored = fromVaultMessages(session.messages).filter(
+        (message) =>
+          message.id !== "mock-user" && message.id !== "mock-assistant",
+      );
+      setMessages(stored);
       setSessionId(session.id);
       setIsHydrating(false);
+
+      // Limpia historial legado de demos en español si aún estaba en disco.
+      if (stored.length !== session.messages.length) {
+        void persistSessionMessages(session.id, toVaultMessages(stored));
+      }
     })();
 
     return () => {
       isMounted = false;
     };
-    // Solo al montar / cambiar a este panel — los mocks del idioma de montaje
-    // quedan como historial "ya dicho" si la sesión estaba vacía.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -354,6 +244,8 @@ function InquisitorChatPanel() {
     }
   };
 
+  const showSystemReady = !isHydrating && messages.length === 0;
+
   return (
     <>
       <div
@@ -365,6 +257,12 @@ function InquisitorChatPanel() {
       >
         {isHydrating ? (
           <p className="text-sm text-neutral-600">…</p>
+        ) : showSystemReady ? (
+          <div className="flex flex-1 flex-col items-center justify-center px-4 text-center">
+            <p className="assistant-serif max-w-md text-[1.05rem] leading-[1.7] text-neutral-500">
+              {SYSTEM_READY_MESSAGE}
+            </p>
+          </div>
         ) : (
           messages.map((message) =>
             message.role === "user" ? (
@@ -436,10 +334,9 @@ function ProfessorExamPanel() {
   const { dict, t } = useLanguage();
   const isPro = useUserStore((s) => s.isPro);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [pdfOptions, setPdfOptions] = useState<SourceFileMeta[]>(DEMO_PDFS);
-  const [usingDemoSources, setUsingDemoSources] = useState(true);
-  const [selectedPdfId, setSelectedPdfId] = useState(DEMO_PDFS[0].id);
-  const [pageRange, setPageRange] = useState("12–28");
+  const [pdfOptions, setPdfOptions] = useState<SourceFileMeta[]>(EMPTY_PDFS);
+  const [selectedPdfId, setSelectedPdfId] = useState("");
+  const [pageRange, setPageRange] = useState("");
   const [examType, setExamType] = useState<ExamType>("clinical");
   const [questions, setQuestions] = useState<ExamQuestion[] | null>(null);
   const [answers, setAnswers] = useState<Record<string, number>>({});
@@ -452,11 +349,9 @@ function ProfessorExamPanel() {
       if (files.length > 0) {
         setPdfOptions(files);
         setSelectedPdfId(files[0].id);
-        setUsingDemoSources(false);
       } else {
-        setPdfOptions(DEMO_PDFS);
-        setSelectedPdfId(DEMO_PDFS[0].id);
-        setUsingDemoSources(true);
+        setPdfOptions(EMPTY_PDFS);
+        setSelectedPdfId("");
       }
     });
     return () => {
@@ -528,7 +423,7 @@ function ProfessorExamPanel() {
                 </option>
               ))}
             </select>
-            {usingDemoSources && (
+            {pdfOptions.length === 0 && (
               <p className="mt-1.5 text-[11px] text-neutral-600">
                 {dict.assistant.professor.noSourceHint}
               </p>

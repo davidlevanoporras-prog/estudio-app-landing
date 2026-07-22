@@ -15,7 +15,6 @@
     "analytics": "분석",
     "sources": "소스",
     "challenges": "챌린지",
-    "arguments": "논거",
     "simulator": "시뮬레이터",
     "assistant": "어시스턴트"
   },
@@ -163,7 +162,9 @@
     "deleteDeckConfirm": "\"{{name}}\" 덱을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "deleteConfirmTitle": "덱 삭제",
     "cancelLabel": "취소",
-    "deckMenuLabel": "덱 옵션"
+    "deckMenuLabel": "덱 옵션",
+    "cardCountOne": "카드 1장",
+    "cardCountMany": "카드 {{count}}장"
   },
   "loadingVault": {
     "decksLabel": "볼트에서 덱을 불러오는 중…"
@@ -399,5 +400,12 @@
     "toolsBody": "localStorage, 미디어 IndexedDB를 비우고 앱을 다시 로드합니다. 이 기기에서는 되돌릴 수 없습니다.",
     "resetConfirm": "모든 로컬 데이터를 삭제하고 다시 로드할까요? 이 작업은 취소할 수 없습니다.",
     "resetButton": "모든 데이터 지우기 (Reset)"
+  },
+  "emptyStates": {
+    "noDecks": "아직 덱이 없습니다.",
+    "noMetrics": "데이터 부족",
+    "noChallenges": "오늘 도전 과제가 없습니다.",
+    "createFirstDeck": "첫 덱 만들기",
+    "startSessionForMetrics": "학습 세션을 시작하면 신경 지표가 생성됩니다."
   }
 }

@@ -1,4 +1,5 @@
 import { getVaultValue, isVaultAvailable, setAndPersist } from "./appStore";
+import { getSecureItem, setSecureItem } from "./secureStorage";
 import { VAULT_KEYS } from "./vaultKeys";
 
 /**
@@ -17,7 +18,7 @@ export async function loadIsPremium(): Promise<boolean> {
 
   if (!isVaultAvailable()) {
     try {
-      return localStorage.getItem(BROWSER_FALLBACK_KEY) === "true";
+      return getSecureItem(BROWSER_FALLBACK_KEY) === "true";
     } catch {
       return false;
     }
@@ -34,7 +35,7 @@ export async function saveIsPremium(value: boolean): Promise<void> {
   }
 
   try {
-    localStorage.setItem(BROWSER_FALLBACK_KEY, value ? "true" : "false");
+    setSecureItem(BROWSER_FALLBACK_KEY, value ? "true" : "false");
   } catch {
     /* private mode — el flag vive solo en RAM esta sesión */
   }

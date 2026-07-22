@@ -131,15 +131,17 @@ export default function Landing() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.35 }}
-            className="flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl sm:h-80"
+            className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-1.5 sm:p-2"
             style={{
               boxShadow:
-                "0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.08)",
+                "0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px -24px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.08)",
             }}
           >
-            <span className="text-[11px] font-medium tracking-[0.28em] text-white/30 uppercase">
-              Captura Flashcards
-            </span>
+            <img
+              src="/captura-flashcards.png"
+              alt="Flashcards Dashboard"
+              className="h-full w-full rounded-xl border border-zinc-800/50 object-cover shadow-2xl"
+            />
           </motion.div>
         </div>
 
@@ -150,15 +152,17 @@ export default function Landing() {
             initial="hidden"
             whileInView="visible"
             viewport={{ once: true, amount: 0.35 }}
-            className="order-2 flex h-64 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.03] backdrop-blur-xl sm:h-80 lg:order-1"
+            className="relative order-2 aspect-[16/10] w-full overflow-hidden rounded-2xl border border-white/10 bg-black/40 p-1.5 sm:p-2 lg:order-1"
             style={{
               boxShadow:
-                "0 0 0 1px rgba(255,255,255,0.06), inset 0 1px 0 rgba(255,255,255,0.08)",
+                "0 0 0 1px rgba(255,255,255,0.06), 0 40px 80px -24px rgba(0,0,0,0.85), inset 0 1px 0 rgba(255,255,255,0.08)",
             }}
           >
-            <span className="text-[11px] font-medium tracking-[0.28em] text-white/30 uppercase">
-              Captura Simulador
-            </span>
+            <img
+              src="/captura-simulator.png"
+              alt="Simulator Interface"
+              className="h-full w-full rounded-xl border border-zinc-800/50 object-cover shadow-2xl"
+            />
           </motion.div>
 
           <motion.div

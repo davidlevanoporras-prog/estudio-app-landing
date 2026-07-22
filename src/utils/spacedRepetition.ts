@@ -1,8 +1,7 @@
 /**
  * "El Motor Matemático" — implementación pura (sin estado, sin I/O) del
  * algoritmo SM-2 (SuperMemo, Wozniak 1990), en su variante de 4 grados de
- * calidad — la misma que describe `ArgumentsView.tsx` ("Fundamentos
- * Científicos" → "Repetición Espaciada y el Algoritmo SM-2").
+ * calidad.
  *
  * Consumido por `StudyView.tsx` (el "Quirófano Matemático"): cada vez que el
  * Centro de Mando Táctico califica una tarjeta ya volteada, `calculateSM2`

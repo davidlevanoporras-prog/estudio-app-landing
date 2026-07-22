@@ -31,37 +31,28 @@ const BASALT_BG = "#0b0d0f";
 const CARD_BG = "#12161c";
 const AMBER = "#f3b36b";
 
-/** Valores de calibración — solo se ven en un vault recién nacido, sin mazos ni repasos todavía, para que el panel jamás se sienta "vacío" ni luzca como un placeholder roto. */
-const FALLBACK_COGNITIVE_LOAD = 24;
-const FALLBACK_RETENTION_INDEX = 87;
-const FALLBACK_SYNAPTIC_STABILITY = 2.45;
-
+/** Sin fallbacks inventados — vault vacío = métricas nulas / cero. */
 type LabMetrics = {
   cognitiveLoad: number;
-  retentionIndex: number;
-  synapticStability: number;
+  retentionIndex: number | null;
+  synapticStability: number | null;
+  hasHistory: boolean;
 };
 
-/**
- * Lee el estado real del motor SM-2 (`decks`) y del historial de
- * calificaciones (`studyStats`, ver `lib/studyStats.ts`) para las 3 Señales
- * Vitales. Cae a las constantes de calibración de arriba solo cuando no hay
- * suficiente señal real todavía (vault nuevo o sin repasos registrados).
- */
 function computeLabMetrics(decks: Deck[], stats: StudyStats): LabMetrics {
   const allCards = decks.flatMap((deck) => deck.cards);
 
   const cognitiveLoad =
     allCards.length > 0
       ? allCards.filter((card) => isCardDue(card.nextReviewDate)).length
-      : FALLBACK_COGNITIVE_LOAD;
+      : 0;
 
   const { again, hard, good, easy } = stats.global;
   const totalReviews = again + hard + good + easy;
   const retentionIndex =
     totalReviews > 0
       ? Math.round(((good + easy) / totalReviews) * 100)
-      : FALLBACK_RETENTION_INDEX;
+      : null;
 
   const synapticStability =
     allCards.length > 0
@@ -73,17 +64,22 @@ function computeLabMetrics(decks: Deck[], stats: StudyStats): LabMetrics {
             allCards.length) *
             100,
         ) / 100
-      : FALLBACK_SYNAPTIC_STABILITY;
+      : null;
 
-  return { cognitiveLoad, retentionIndex, synapticStability };
+  return {
+    cognitiveLoad,
+    retentionIndex,
+    synapticStability,
+    hasHistory: totalReviews > 0 || allCards.length > 0,
+  };
 }
 
 type CurvePoint = { day: number; retention: number };
 
 /**
  * Puntos donde el motor SM-2 dispararía un repaso exitoso ("Bueno") sobre una
- * tarjeta recién aprendida — la misma progresión clásica 1/3/7/14/30 días
- * que documenta `ArgumentsView.tsx` para la Repetición Espaciada.
+ * tarjeta recién aprendida — la progresión clásica 1/3/7/14/30 días de la
+ * Repetición Espaciada.
  */
 const REVIEW_CHECKPOINTS = [0, 1, 3, 7, 14, 30] as const;
 const CURVE_SEGMENT_COUNT = REVIEW_CHECKPOINTS.length - 1;
@@ -160,10 +156,20 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
   const [stats] = useState(loadStudyStats);
 
   const metrics = useMemo(() => computeLabMetrics(decks, stats), [decks, stats]);
-  const curveData = useMemo(
-    () => buildForgettingCurve(metrics.retentionIndex, metrics.synapticStability),
-    [metrics.retentionIndex, metrics.synapticStability],
-  );
+  const curveData = useMemo(() => {
+    if (
+      metrics.retentionIndex === null ||
+      metrics.synapticStability === null
+    ) {
+      return [];
+    }
+    return buildForgettingCurve(
+      metrics.retentionIndex,
+      metrics.synapticStability,
+    );
+  }, [metrics.retentionIndex, metrics.synapticStability]);
+
+  const showEmptyCurve = !metrics.hasHistory;
 
   return (
     <div
@@ -189,14 +195,30 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
         <MetricCard
           icon={Target}
           label={dict.laboratory.retentionIndexLabel}
-          value={`${metrics.retentionIndex}%`}
-          detail={dict.laboratory.retentionIndexDetail}
+          value={
+            metrics.retentionIndex === null
+              ? "—"
+              : `${metrics.retentionIndex}%`
+          }
+          detail={
+            metrics.retentionIndex === null
+              ? dict.emptyStates.noMetrics
+              : dict.laboratory.retentionIndexDetail
+          }
         />
         <MetricCard
           icon={Activity}
           label={dict.laboratory.synapticStabilityLabel}
-          value={metrics.synapticStability.toFixed(2)}
-          detail={dict.laboratory.synapticStabilityDetail}
+          value={
+            metrics.synapticStability === null
+              ? "—"
+              : metrics.synapticStability.toFixed(2)
+          }
+          detail={
+            metrics.synapticStability === null
+              ? dict.emptyStates.noMetrics
+              : dict.laboratory.synapticStabilityDetail
+          }
         />
       </section>
 
@@ -213,16 +235,25 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
               {dict.laboratory.curveSubtitle}
             </p>
           </div>
-          <div className="flex items-center gap-2 text-[11px] tracking-wide text-[#e5e7eb]/50 uppercase">
-            <span
-              className="h-1.5 w-1.5 rounded-full"
-              style={{ backgroundColor: AMBER }}
-              aria-hidden="true"
-            />
-            {dict.laboratory.curveRetentionLabel}
-          </div>
+          {!showEmptyCurve && (
+            <div className="flex items-center gap-2 text-[11px] tracking-wide text-[#e5e7eb]/50 uppercase">
+              <span
+                className="h-1.5 w-1.5 rounded-full"
+                style={{ backgroundColor: AMBER }}
+                aria-hidden="true"
+              />
+              {dict.laboratory.curveRetentionLabel}
+            </div>
+          )}
         </div>
 
+        {showEmptyCurve ? (
+          <div className="flex h-64 w-full flex-col items-center justify-center gap-3 text-center sm:h-72">
+            <p className="max-w-sm text-sm leading-relaxed text-[#e5e7eb]/45">
+              {dict.emptyStates.startSessionForMetrics}
+            </p>
+          </div>
+        ) : (
         <div className="h-64 w-full sm:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart
@@ -268,12 +299,12 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
                 stroke={AMBER}
                 strokeWidth={2.25}
                 dot={false}
-                activeDot={{ r: 4, fill: AMBER, stroke: BASALT_BG, strokeWidth: 2 }}
-                isAnimationActive
+                activeDot={{ r: 4, fill: AMBER, strokeWidth: 0 }}
               />
             </LineChart>
           </ResponsiveContainer>
         </div>
+        )}
       </section>
     </div>
   );

@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "Excellence absolue",
-  "version": "0.1.0",
-  "identifier": "com.excellence.absolue",
+  "productName": "Excellence Absolue",
+  "version": "1.0.0",
+  "identifier": "com.excellenceabsolue.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Excellence absolue",
+        "title": "Excellence Absolue",
         "width": 1280,
         "height": 800,
         "minWidth": 1024,

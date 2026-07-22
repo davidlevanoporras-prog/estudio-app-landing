@@ -1,12 +1,17 @@
 import { create } from "zustand";
 import { saveIsPremium } from "../lib/license";
+import {
+  getSecureItem,
+  removeSecureItem,
+  setSecureItem,
+} from "../lib/secureStorage";
 
 const USER_PRO_KEY = "excellence-user-is-pro";
 const USER_LICENSE_KEY = "excellence-user-license-key";
 
 function readPersistedPro(): boolean {
   try {
-    return localStorage.getItem(USER_PRO_KEY) === "true";
+    return getSecureItem(USER_PRO_KEY) === "true";
   } catch {
     return false;
   }
@@ -14,7 +19,7 @@ function readPersistedPro(): boolean {
 
 function readPersistedLicense(): string | null {
   try {
-    return localStorage.getItem(USER_LICENSE_KEY);
+    return getSecureItem(USER_LICENSE_KEY);
   } catch {
     return null;
   }
@@ -38,8 +43,8 @@ export const useUserStore = create<UserStoreState>((set) => ({
     if (!trimmed) return;
 
     try {
-      localStorage.setItem(USER_PRO_KEY, "true");
-      localStorage.setItem(USER_LICENSE_KEY, trimmed);
+      setSecureItem(USER_PRO_KEY, "true");
+      setSecureItem(USER_LICENSE_KEY, trimmed);
     } catch (error) {
       console.error("[userStore] No se pudo persistir la licencia:", error);
     }
@@ -51,12 +56,8 @@ export const useUserStore = create<UserStoreState>((set) => ({
   },
 
   deactivatePro: () => {
-    try {
-      localStorage.removeItem(USER_PRO_KEY);
-      localStorage.removeItem(USER_LICENSE_KEY);
-    } catch {
-      /* ignore */
-    }
+    removeSecureItem(USER_PRO_KEY);
+    removeSecureItem(USER_LICENSE_KEY);
     set({ isPro: false, licenseKey: null });
   },
 }));

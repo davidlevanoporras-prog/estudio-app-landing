@@ -15,7 +15,6 @@
     "analytics": "Analytics",
     "sources": "Sources",
     "challenges": "Challenges",
-    "arguments": "Arguments",
     "simulator": "Simulator",
     "assistant": "Assistant"
   },
@@ -163,7 +162,9 @@
     "deleteDeckConfirm": "Delete the deck \"{{name}}\"? This cannot be undone.",
     "deleteConfirmTitle": "Delete deck",
     "cancelLabel": "Cancel",
-    "deckMenuLabel": "Deck options"
+    "deckMenuLabel": "Deck options",
+    "cardCountOne": "1 card",
+    "cardCountMany": "{{count}} cards"
   },
   "loadingVault": {
     "decksLabel": "Loading your decks from the Vault…"
@@ -399,5 +400,12 @@
     "toolsBody": "Clears localStorage, media IndexedDB, and reloads the app. Irreversible on this device.",
     "resetConfirm": "Delete all local data and reload? This cannot be undone.",
     "resetButton": "Clear all data (Reset)"
+  },
+  "emptyStates": {
+    "noDecks": "No decks yet.",
+    "noMetrics": "Insufficient data",
+    "noChallenges": "No challenges for today.",
+    "createFirstDeck": "Create your first deck",
+    "startSessionForMetrics": "Start a study session to generate neuro-metrics."
   }
 }

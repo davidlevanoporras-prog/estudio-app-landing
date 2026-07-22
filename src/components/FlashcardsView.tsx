@@ -6,6 +6,7 @@ import {
 } from "react";
 import {
   Check,
+  FolderX,
   Layers,
   MoreVertical,
   Pencil,
@@ -16,6 +17,7 @@ import {
 import { useLanguage } from "../i18n/LanguageContext";
 import type { Deck } from "../types/deck";
 import ConfirmDialog from "./ConfirmDialog";
+import { PortalMenu } from "./PortalMenu";
 
 type FlashcardsViewProps = {
   decks: Deck[];
@@ -140,20 +142,20 @@ export default function FlashcardsView({
       </div>
 
       {decks.length === 0 ? (
-        <div className="photo-glass-panel flex flex-col items-center justify-center gap-4 rounded-xl border border-dashed border-card-rest bg-card/60 py-24 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-muted-foreground">
-            <Layers className="h-6 w-6" strokeWidth={1.75} />
+        <div className="photo-glass-panel flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-white/10 bg-card/40 py-28 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-neutral-500">
+            <FolderX className="h-6 w-6" strokeWidth={1.5} />
           </div>
-          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            {dict.flashcards.emptyState}
+          <p className="max-w-sm text-sm leading-relaxed text-neutral-500">
+            {dict.emptyStates.noDecks}
           </p>
           <button
             type="button"
             onClick={handleCreateDeck}
-            className="premium-btn flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2 text-sm font-medium tracking-wide text-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
+            className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-medium tracking-wide text-neutral-100 uppercase transition-colors duration-300 hover:bg-white/[0.14]"
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} />
-            {dict.flashcards.createDeck}
+            {dict.emptyStates.createFirstDeck}
           </button>
         </div>
       ) : (
@@ -232,7 +234,7 @@ function DeckCard({
   onEdit,
   onDelete,
 }: DeckCardProps) {
-  const { dict } = useLanguage();
+  const { dict, t } = useLanguage();
   const [draftName, setDraftName] = useState(deck.name);
 
   useEffect(() => {
@@ -258,6 +260,7 @@ function DeckCard({
         "photo-glass-panel group relative flex cursor-pointer items-center gap-3 rounded-xl border border-card-rest bg-card p-5 transition-all duration-300",
         "hover:border-primary hover:shadow-glow-card",
         isSelected ? "border-primary bg-primary-soft shadow-glow-sm" : "",
+        isMenuOpen ? "z-[40]" : "z-0",
       ].join(" ")}
     >
       {isSelectionMode ? (
@@ -313,8 +316,8 @@ function DeckCard({
         )}
         <p className="mt-0.5 text-xs text-neutral-500">
           {deck.cards.length === 1
-            ? "1 tarjeta"
-            : `${deck.cards.length} tarjetas`}
+            ? dict.flashcards.cardCountOne
+            : t(dict.flashcards.cardCountMany, { count: deck.cards.length })}
         </p>
       </div>
 
@@ -360,24 +363,12 @@ function DeckMenu({
   onDelete,
 }: DeckMenuProps) {
   const { dict } = useLanguage();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [isOpen, onClose]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div ref={containerRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <button
+        ref={buttonRef}
         type="button"
         onClick={(event) => {
           event.stopPropagation();
@@ -391,46 +382,54 @@ function DeckMenu({
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
       </button>
 
-      {isOpen && (
-        <div
-          role="menu"
-          onClick={(event) => event.stopPropagation()}
-          className="absolute right-0 top-full z-10 mt-2 w-44 rounded-lg border border-white/10 bg-[#141618] p-1.5 shadow-2xl"
+      <PortalMenu
+        open={isOpen}
+        anchorRef={buttonRef}
+        onClose={onClose}
+        className="w-44 rounded-lg border border-white/10 bg-[#141618] p-1.5 shadow-2xl"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(event) => {
+            event.stopPropagation();
+            onEdit(event);
+          }}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-300 transition-colors duration-200 hover:bg-white/5 hover:text-neutral-100"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onEdit}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-300 transition-colors duration-200 hover:bg-white/5 hover:text-neutral-100"
-          >
-            <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.flashcards.editAction}
-          </button>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.flashcards.editAction}
+        </button>
 
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onShare}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-500 transition-colors duration-200 hover:bg-white/5"
-          >
-            <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.flashcards.shareAction}
-            <span className="ml-auto text-[10px] uppercase">
-              {dict.flashcards.shareComingSoon}
-            </span>
-          </button>
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(event) => {
+            event.stopPropagation();
+            onShare(event);
+          }}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-500 transition-colors duration-200 hover:bg-white/5"
+        >
+          <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.flashcards.shareAction}
+          <span className="ml-auto text-[10px] uppercase">
+            {dict.flashcards.shareComingSoon}
+          </span>
+        </button>
 
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onDelete}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
-          >
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.flashcards.deleteAction}
-          </button>
-        </div>
-      )}
+        <button
+          type="button"
+          role="menuitem"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete(event);
+          }}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.flashcards.deleteAction}
+        </button>
+      </PortalMenu>
     </div>
   );
 }

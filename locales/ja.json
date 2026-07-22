@@ -15,7 +15,6 @@
     "analytics": "分析",
     "sources": "ソース",
     "challenges": "チャレンジ",
-    "arguments": "論拠",
     "simulator": "シミュレーター",
     "assistant": "アシスタント"
   },
@@ -163,7 +162,9 @@
     "deleteDeckConfirm": "デッキ「{{name}}」を削除しますか？この操作は元に戻せません。",
     "deleteConfirmTitle": "デッキを削除",
     "cancelLabel": "キャンセル",
-    "deckMenuLabel": "デッキオプション"
+    "deckMenuLabel": "デッキオプション",
+    "cardCountOne": "カード 1 枚",
+    "cardCountMany": "カード {{count}} 枚"
   },
   "loadingVault": {
     "decksLabel": "ボールトからデッキを読み込んでいます…"
@@ -399,5 +400,12 @@
     "toolsBody": "localStorage、メディア IndexedDB を消去してアプリを再読み込みします。この端末では元に戻せません。",
     "resetConfirm": "すべてのローカルデータを削除して再読み込みしますか？この操作は取り消せません。",
     "resetButton": "すべてのデータを消去 (Reset)"
+  },
+  "emptyStates": {
+    "noDecks": "まだデッキがありません。",
+    "noMetrics": "データが不足しています",
+    "noChallenges": "今日のチャレンジはありません。",
+    "createFirstDeck": "最初のデッキを作成",
+    "startSessionForMetrics": "学習セッションを開始すると神経指標が生成されます。"
   }
 }

@@ -9,6 +9,8 @@
  * siga siendo válido; ver `isRatingCounts` más abajo, que rellena `good`
  * con 0 si falta.
  */
+import { getSecureJSON, removeSecureItem, setSecureJSON } from "./secureStorage";
+
 export type RatingKind = "again" | "hard" | "good" | "easy";
 
 export type RatingCounts = {
@@ -47,16 +49,18 @@ function normalizeRatingCounts(value: RatingCounts): RatingCounts {
 /** Lee las estadísticas acumuladas (global + por mazo), con defaults seguros. */
 export function loadStudyStats(): StudyStats {
   try {
-    const raw = localStorage.getItem(STUDY_STATS_STORAGE_KEY);
-    if (!raw) return { global: emptyCounts(), byDeck: {} };
+    const parsed = getSecureJSON<{
+      global?: unknown;
+      byDeck?: Record<string, unknown>;
+    }>(STUDY_STATS_STORAGE_KEY);
+    if (!parsed) return { global: emptyCounts(), byDeck: {} };
 
-    const parsed = JSON.parse(raw);
-    const global = isRatingCounts(parsed?.global)
+    const global = isRatingCounts(parsed.global)
       ? normalizeRatingCounts(parsed.global)
       : emptyCounts();
 
     const byDeck: Record<string, RatingCounts> = {};
-    if (parsed?.byDeck && typeof parsed.byDeck === "object") {
+    if (parsed.byDeck && typeof parsed.byDeck === "object") {
       for (const [deckId, counts] of Object.entries(parsed.byDeck)) {
         if (isRatingCounts(counts)) byDeck[deckId] = normalizeRatingCounts(counts);
       }
@@ -70,7 +74,7 @@ export function loadStudyStats(): StudyStats {
 
 function saveStudyStats(stats: StudyStats): void {
   try {
-    localStorage.setItem(STUDY_STATS_STORAGE_KEY, JSON.stringify(stats));
+    setSecureJSON(STUDY_STATS_STORAGE_KEY, stats);
   } catch {
     /* localStorage no disponible o cuota excedida — la analítica no se persiste esta vez */
   }
@@ -79,11 +83,7 @@ function saveStudyStats(stats: StudyStats): void {
 /** Borra toda la analítica persistida (botón "Restablecer Datos") y devuelve el estado en cero. */
 export function clearStudyStats(): StudyStats {
   const empty: StudyStats = { global: emptyCounts(), byDeck: {} };
-  try {
-    localStorage.removeItem(STUDY_STATS_STORAGE_KEY);
-  } catch {
-    /* localStorage no disponible — no hay nada que borrar de todas formas */
-  }
+  removeSecureItem(STUDY_STATS_STORAGE_KEY);
   return empty;
 }
 

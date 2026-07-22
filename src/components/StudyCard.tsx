@@ -73,10 +73,10 @@ type CardFaceProps = {
 
 /**
  * Fondo basalto (`bg-neutral-900`) + bordes sutiles grises + texto Serif
- * inmaculado (Playfair Display, vía `style` inline — mismo patrón que
- * `ArgumentsView.tsx`) — el "Silent Luxury" de esta Misión. La cara trasera
- * lleva un borde ámbar apenas perceptible (`border-primary/25`) para que el
- * giro se sienta como una revelación, no como un duplicado plano.
+ * inmaculado (Playfair Display, vía `style` inline) — el "Silent Luxury" de
+ * esta Misión. La cara trasera lleva un borde ámbar apenas perceptible
+ * (`border-primary/25`) para que el giro se sienta como una revelación, no
+ * como un duplicado plano.
  */
 function CardFace({ card, side }: CardFaceProps) {
   const { dict } = useLanguage();

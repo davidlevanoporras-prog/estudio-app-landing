@@ -15,7 +15,6 @@
     "analytics": "Analyse",
     "sources": "Quellen",
     "challenges": "Herausforderungen",
-    "arguments": "Argumente",
     "simulator": "Simulator",
     "assistant": "Assistent"
   },
@@ -163,7 +162,9 @@
     "deleteDeckConfirm": "Stapel \"{{name}}\" löschen? Dies kann nicht rückgängig gemacht werden.",
     "deleteConfirmTitle": "Stapel löschen",
     "cancelLabel": "Abbrechen",
-    "deckMenuLabel": "Stapeloptionen"
+    "deckMenuLabel": "Stapeloptionen",
+    "cardCountOne": "1 Karte",
+    "cardCountMany": "{{count}} Karten"
   },
   "loadingVault": {
     "decksLabel": "Deine Stapel werden aus dem Tresor geladen…"
@@ -399,5 +400,12 @@
     "toolsBody": "Löscht localStorage, Media-IndexedDB und lädt die App neu. Unumkehrbar auf diesem Gerät.",
     "resetConfirm": "Alle lokalen Daten löschen und neu laden? Dies kann nicht rückgängig gemacht werden.",
     "resetButton": "Alle Daten löschen (Reset)"
+  },
+  "emptyStates": {
+    "noDecks": "Noch keine Decks.",
+    "noMetrics": "Nicht genügend Daten",
+    "noChallenges": "Keine Herausforderungen für heute.",
+    "createFirstDeck": "Erstelle dein erstes Deck",
+    "startSessionForMetrics": "Starte eine Lernsitzung, um Neuro-Metriken zu erzeugen."
   }
 }

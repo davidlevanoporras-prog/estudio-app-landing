@@ -18,7 +18,6 @@ import {
   Pause,
   Play,
   RotateCcw,
-  Scale,
   Timer,
   User,
   X,
@@ -45,7 +44,6 @@ import {
   useThemeStore,
 } from "../store/themeStore";
 import AnalyticsView from "./AnalyticsView";
-import ArgumentsView from "./ArgumentsView";
 import AssistantView from "./AssistantView";
 import ChallengesView from "./ChallengesView";
 import DashboardHomeView from "./DashboardHomeView";
@@ -65,7 +63,6 @@ type ViewId =
   | "challenges"
   | "analisis"
   | "sources"
-  | "arguments"
   | "simulator"
   | "assistant"
   | "study"
@@ -92,7 +89,6 @@ type NavItem = {
     | "challenges"
     | "analytics"
     | "sources"
-    | "arguments"
     | "simulator"
     | "assistant";
   icon: LucideIcon;
@@ -109,12 +105,8 @@ const UI_SPEED_STORAGE_KEY = "estudio-ui-speed";
 const SESSION_TIME_STORAGE_KEY = "estudio-session-timer";
 
 /**
- * Misión 3 ("Consistencia"): sin "Horario Autónomo", los 7 módulos restantes
- * se agrupan en dos bloques con propósito claro —"Gestión" (lo operativo:
- * crear/estudiar/competir) y "Soporte y Cognición" (lo analítico/teórico,
- * más los dos nuevos módulos de Misión 2)— en vez de una lista plana de 7
- * ítems sin jerarquía. Cada bloque lleva su propio encabezado silencioso en
- * el Sidebar (ver el `<nav>` más abajo).
+ * Módulos del Sidebar agrupados en "Gestión" (operativo) y
+ * "Soporte y Cognición" (analítico + herramientas).
  */
 const navGroups: NavGroup[] = [
   {
@@ -130,7 +122,6 @@ const navGroups: NavGroup[] = [
     items: [
       { id: "analisis", labelKey: "analytics", icon: BarChart3 },
       { id: "sources", labelKey: "sources", icon: Library },
-      { id: "arguments", labelKey: "arguments", icon: Scale },
       { id: "simulator", labelKey: "simulator", icon: Puzzle },
       { id: "assistant", labelKey: "assistant", icon: Bot },
     ],
@@ -608,7 +599,7 @@ export default function DashboardLayout({
           "flex flex-col border-wenge-border-subtle bg-cuervo",
           "fixed inset-y-0 left-0 z-50 w-[min(18rem,85vw)] border-r transition-transform duration-300 ease-in-out",
           isMobileNavOpen ? "translate-x-0" : "-translate-x-full",
-          "md:relative md:z-auto md:h-screen md:w-64 md:shrink-0 md:translate-x-0 md:overflow-visible",
+          "md:relative md:z-30 md:h-screen md:w-64 md:shrink-0 md:translate-x-0 md:overflow-visible",
         ].join(" ")}
       >
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-wenge-border-subtle px-6">
@@ -925,7 +916,9 @@ export default function DashboardLayout({
             <>
               {activeView === "dashboard" && (
                 <DashboardHomeView
+                  decks={decks}
                   onNavigateToFlashcards={() => setActiveView("flashcards")}
+                  onNavigateToChallenges={() => setActiveView("challenges")}
                 />
               )}
               {activeView === "flashcards" && (
@@ -1027,7 +1020,6 @@ export default function DashboardLayout({
                 />
               )}
               {activeView === "sources" && <SourcesView />}
-              {activeView === "arguments" && <ArgumentsView />}
               {activeView === "simulator" && <SimulatorView />}
               {activeView === "assistant" && (
                 <AssistantView mode={assistantMode} />
@@ -1108,7 +1100,7 @@ function AssistantNavItem({
   const { dict } = useLanguage();
 
   return (
-    <div className="group/assistant relative shrink-0 md:w-full">
+    <div className="group/assistant relative z-10 shrink-0 md:w-full md:hover:z-[100]">
       <button
         type="button"
         onClick={() => {
@@ -1154,7 +1146,7 @@ function AssistantNavItem({
           y el panel. */}
       <div
         className={[
-          "pointer-events-none absolute z-50 opacity-0 transition-opacity duration-150",
+          "pointer-events-none absolute z-[100] opacity-0 transition-opacity duration-150",
           "top-full left-0 pt-1",
           "md:top-0 md:left-full md:pt-0 md:pl-1.5",
           "group-hover/assistant:pointer-events-auto group-hover/assistant:opacity-100",

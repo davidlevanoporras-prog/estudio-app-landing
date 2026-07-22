@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import type { Dictionary, Language } from "../i18n/dictionary";
 import { useLanguage } from "../i18n/LanguageContext";
+import { getSecureJSON, setSecureJSON } from "../lib/secureStorage";
+import { PortalMenu } from "./PortalMenu";
 
 /** Cadencia de recurrencia de un desafío — `"none"` es el valor por defecto (sin repetición). */
 export type Recurrence = "none" | "daily" | "weekly" | "monthly" | "yearly";
@@ -101,9 +103,7 @@ function normalizeChallenge(record: Record<string, unknown>): Challenge {
 /** Lee el CRUD persistido — vacío si no hay nada guardado o el JSON está corrupto. */
 function loadStoredChallenges(): Challenge[] {
   try {
-    const raw = localStorage.getItem(CHALLENGES_STORAGE_KEY);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw);
+    const parsed = getSecureJSON<unknown>(CHALLENGES_STORAGE_KEY);
     return Array.isArray(parsed)
       ? parsed.filter(isStoredChallengeShape).map(normalizeChallenge)
       : [];
@@ -482,7 +482,7 @@ export default function ChallengesView() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
   useEffect(() => {
-    localStorage.setItem(CHALLENGES_STORAGE_KEY, JSON.stringify(challenges));
+    setSecureJSON(CHALLENGES_STORAGE_KEY, challenges);
   }, [challenges]);
 
   const groups = useMemo(() => groupByDate(challenges), [challenges]);
@@ -1252,27 +1252,15 @@ type TaskMenuProps = {
   onDelete: () => void;
 };
 
-/** Menú kebab "Premium Dark" — mismo lenguaje visual que `DeckMenu` en `FlashcardsView.tsx`, sin modales: Editar activa el input inline, Eliminar borra directo. */
+/** Menú kebab "Premium Dark" — portal flotante para no quedar bajo filas adyacentes. */
 function TaskMenu({ isOpen, onToggle, onClose, onEdit, onDelete }: TaskMenuProps) {
   const { dict } = useLanguage();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        onClose();
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [isOpen, onClose]);
+  const buttonRef = useRef<HTMLButtonElement>(null);
 
   return (
-    <div ref={containerRef} className="relative shrink-0">
+    <div className="relative shrink-0">
       <button
+        ref={buttonRef}
         type="button"
         onClick={onToggle}
         aria-haspopup="menu"
@@ -1283,32 +1271,32 @@ function TaskMenu({ isOpen, onToggle, onClose, onEdit, onDelete }: TaskMenuProps
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
       </button>
 
-      {isOpen && (
-        <div
-          role="menu"
-          className="absolute right-0 top-full z-10 mt-2 w-40 rounded-lg border border-wenge-border-subtle bg-cuervo p-1.5 shadow-glow-card"
+      <PortalMenu
+        open={isOpen}
+        anchorRef={buttonRef}
+        onClose={onClose}
+        className="w-40 rounded-lg border border-wenge-border-subtle bg-cuervo p-1.5 shadow-glow-card"
+      >
+        <button
+          type="button"
+          role="menuitem"
+          onClick={onEdit}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onEdit}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
-          >
-            <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.challenges.editAction}
-          </button>
+          <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.challenges.editAction}
+        </button>
 
-          <button
-            type="button"
-            role="menuitem"
-            onClick={onDelete}
-            className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
-          >
-            <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.challenges.deleteAction}
-          </button>
-        </div>
-      )}
+        <button
+          type="button"
+          role="menuitem"
+          onClick={onDelete}
+          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+        >
+          <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.challenges.deleteAction}
+        </button>
+      </PortalMenu>
     </div>
   );
 }

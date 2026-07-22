@@ -15,7 +15,6 @@
     "analytics": "Análisis",
     "sources": "Fuentes",
     "challenges": "Desafíos",
-    "arguments": "Argumentos",
     "simulator": "Simulador",
     "assistant": "Asistente"
   },
@@ -163,7 +162,9 @@
     "deleteDeckConfirm": "¿Eliminar el mazo \"{{name}}\"? Esta acción no se puede deshacer.",
     "deleteConfirmTitle": "Eliminar mazo",
     "cancelLabel": "Cancelar",
-    "deckMenuLabel": "Opciones del mazo"
+    "deckMenuLabel": "Opciones del mazo",
+    "cardCountOne": "1 tarjeta",
+    "cardCountMany": "{{count}} tarjetas"
   },
   "loadingVault": {
     "decksLabel": "Cargando tus mazos desde la Bóveda…"
@@ -399,5 +400,12 @@
     "toolsBody": "Vacía localStorage, IndexedDB de media y recarga la app. Irreversible en este dispositivo.",
     "resetConfirm": "¿Borrar todos los datos locales y recargar? Esta acción no se puede deshacer.",
     "resetButton": "Borrar todos los datos (Reset)"
+  },
+  "emptyStates": {
+    "noDecks": "No hay mazos todavía.",
+    "noMetrics": "Sin datos suficientes",
+    "noChallenges": "Sin desafíos para hoy.",
+    "createFirstDeck": "Crear tu primer mazo",
+    "startSessionForMetrics": "Inicia una sesión de estudio para generar neuro-métricas."
   }
 }
