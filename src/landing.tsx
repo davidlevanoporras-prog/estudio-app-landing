@@ -60,28 +60,21 @@ function WindowsIcon({ className }: { className?: string }) {
  */
 export default function Landing() {
   return (
-    <div className="relative min-h-screen w-full text-[#e8e6e3]">
-      {/* Fondo Basalto — cover full-page */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0 bg-[#050505] bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: "url('/tema-basalto.webp')",
-        }}
-      />
-      {/* Overlay oscuro para contraste del texto, logo y CTAs */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 z-0 bg-black/50"
-        style={{
-          backgroundImage:
-            "linear-gradient(180deg, rgba(5,5,5,0.72) 0%, rgba(5,5,5,0.45) 35%, rgba(5,5,5,0.55) 70%, rgba(5,5,5,0.82) 100%)",
-        }}
-      />
+    <div className="relative min-h-screen w-full bg-black text-[#e8e6e3]">
+      {/* ═══ HERO — 100vh: único bloque con fondo Basalto ═══ */}
+      <section className="relative h-[100vh] w-full overflow-hidden bg-cover bg-center bg-no-repeat">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url('/tema-basalto.webp')",
+          }}
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-0 bg-black/30"
+        />
 
-      <div className="relative z-10">
-      {/* ═══ HERO — 100vh, coreografía + CTAs de descarga ═══ */}
-      <section className="relative h-[100vh] w-full overflow-hidden">
         {/* Fase 2 — Logo: emerge al centro cuando el texto llega a la base */}
         <div className="absolute top-1/2 left-1/2 z-10 -translate-x-1/2 -translate-y-1/2">
           <motion.div
@@ -172,7 +165,8 @@ export default function Landing() {
       </section>
 
       {/* ═══ SECCIÓN 1 — Arquitectura Cognitiva ═══ */}
-      <section className="relative mx-auto max-w-6xl px-6 py-32 sm:px-10 sm:py-40 lg:px-12 lg:py-48">
+      <section className="relative bg-black px-6 py-32 sm:px-10 sm:py-40 lg:px-12 lg:py-48">
+        <div className="mx-auto max-w-6xl">
         <motion.div
           variants={reveal}
           initial="hidden"
@@ -270,10 +264,11 @@ export default function Landing() {
             </p>
           </motion.div>
         </div>
+        </div>
       </section>
 
       {/* ═══ SECCIÓN 2 — Acceso / Pricing ═══ */}
-      <section className="relative border-t border-white/[0.06] px-6 py-32 sm:px-10 sm:py-40 lg:py-48">
+      <section className="relative border-t border-white/[0.06] bg-black px-6 py-32 sm:px-10 sm:py-40 lg:py-48">
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0"
@@ -351,12 +346,11 @@ export default function Landing() {
         </motion.div>
       </section>
 
-      <footer className="border-t border-white/[0.05] px-6 py-12 text-center">
+      <footer className="border-t border-white/[0.05] bg-black px-6 py-12 text-center">
         <p className="text-[10px] tracking-[0.22em] text-white/25 uppercase">
           © {new Date().getFullYear()} Excellence Absolue
         </p>
       </footer>
-      </div>
     </div>
   );
 }
