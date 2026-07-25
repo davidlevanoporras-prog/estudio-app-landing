@@ -1,4 +1,11 @@
 {
+  "common": {
+    "confirmTitle": "¿Estás seguro?",
+    "confirmPermanentMessage": "Esta acción es permanente y no se puede deshacer.",
+    "confirmAction": "Confirmar",
+    "cancelLabel": "Cancelar",
+    "deleteAction": "Eliminar"
+  },
   "sidebar": {
     "brand": "Estudio",
     "tagline": "Panel avanzado",
@@ -231,8 +238,8 @@
     "title": "Nueva Tarjeta",
     "questionLabel": "Pregunta",
     "questionPlaceholder": "Escribe la pregunta o concepto a recordar...",
-    "imageLabel": "Añadir imagen (Opcional)",
-    "noImageLabel": "Sin imagen",
+    "attachImageLabel": "Adjuntar imagen",
+    "removeImageLabel": "Quitar imagen",
     "hintLabel": "Pista (Opcional)",
     "hintPlaceholder": "Una pista opcional que ayude a recordar la respuesta...",
     "answerLabel": "Respuesta",
@@ -264,6 +271,8 @@
     "synapticStabilityDetail": "factor de facilidad promedio del mazo",
     "curveTitle": "Monitor de la Curva del Olvido",
     "curveSubtitle": "Decaimiento de Ebbinghaus estabilizado por repaso espaciado",
+    "curveTooltip": "Representación visual de cómo tu cerebro descarta información con el tiempo. Nuestro algoritmo predice el momento exacto del olvido y programa repasos estratégicos para forzar la retención a largo plazo.",
+    "curveTooltipLabel": "Qué es la Curva del Olvido",
     "curveDayLabel": "Día",
     "curveRetentionLabel": "Retención"
   },
@@ -344,10 +353,10 @@
     "syntaxHelp": "Ayuda de Sintaxis",
     "helpTitle": "Cómo crear tarjetas de entrenamiento",
     "helpBody": "Envuelve la palabra o frase que deseas ocultar utilizando dobles corchetes.",
-    "helpExample": "El hueso más largo del cuerpo es el [[fémur]].",
-    "helpDistractors": "Añade las opciones falsas en las casillas de distractores debajo.",
-    "sentencePlaceholder": "Escribe tu frase y encierra la respuesta entre dobles corchetes. Ej: El tejido principal del corazón es el [[miocardio]].",
-    "syntaxError": "Sintaxis incompleta: envuelve la respuesta en [[ ]]",
+    "helpExample": "El [[tejido muscular]] del corazón es el [[miocardio]].",
+    "helpDistractors": "Añade las opciones falsas en las casillas de distractores debajo. Puedes usar varios [[huecos]] y varias palabras dentro de cada uno.",
+    "sentencePlaceholder": "Escribe tu frase y encierra cada respuesta entre dobles corchetes. Ej: El [[tejido muscular]] del corazón es el [[miocardio]].",
+    "syntaxError": "Sintaxis incompleta: envuelve cada respuesta en [[ ]] (puedes usar varios huecos)",
     "preview": "Vista previa",
     "previewEmpty": "Encierra la respuesta entre [[dobles corchetes]] para ver el hueco.",
     "distractors": "Distractores",

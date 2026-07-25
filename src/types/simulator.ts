@@ -2,17 +2,26 @@
  * Tipos del Simulador (Interactive Cloze + biblioteca de mazos/carpetas).
  */
 
-/** Tarjeta de hueco interactivo. */
+import type { ClozeSegment } from "../utils/parseClozeSyntax";
+
+/** Tarjeta de hueco interactivo (uno o varios `[[...]]`). */
 export interface ClozeCard {
   id: string;
-  /** Texto antes del hueco. */
+  /** Texto antes del primer hueco (legacy / compat). */
   textBefore: string;
-  /** Texto después del hueco. */
+  /** Texto después del primer hueco (legacy; puede re-serializar huecos restantes). */
   textAfter: string;
-  /** Respuesta correcta. */
+  /** Primera respuesta correcta (compat con mazos antiguos). */
   answer: string;
   /** Opciones incorrectas. */
   distractors: string[];
+  /**
+   * Segmentos texto/hueco del enunciado completo.
+   * Si falta, se reconstruye desde textBefore/answer/textAfter.
+   */
+  segments?: ClozeSegment[];
+  /** Todas las respuestas en orden (multi-hueco). */
+  answers?: string[];
 }
 
 /** Mazo de simulación. */

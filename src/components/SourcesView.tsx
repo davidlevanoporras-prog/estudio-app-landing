@@ -30,6 +30,7 @@ import {
   pickPdfFiles,
 } from "../lib/nativeFiles";
 import { useLanguage } from "../i18n/LanguageContext";
+import { useConfirm } from "./ConfirmProvider";
 import { PortalMenu } from "./PortalMenu";
 
 /**
@@ -241,11 +242,8 @@ type SearchResultEntry = {
 };
 
 export default function SourcesView() {
-  const { dict, t } = useLanguage();
-  const fileCountLabel = (count: number) =>
-    count === 1
-      ? dict.sources.fileCountOne
-      : t(dict.sources.fileCountMany, { count });
+  const { dict } = useLanguage();
+  const confirm = useConfirm();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [files, setFiles] = useState<SourceFile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -368,14 +366,9 @@ export default function SourcesView() {
     );
   };
 
-  const handleDeleteFolder = (folder: Folder) => {
-    const confirmed = window.confirm(
-      t(dict.sources.deleteFolderConfirm, {
-        name: folder.name,
-        files: fileCountLabel(filesCountByFolder.get(folder.id) ?? 0),
-      }),
-    );
-    if (!confirmed) return;
+  const handleDeleteFolder = async (folder: Folder) => {
+    const ok = await confirm();
+    if (!ok) return;
 
     const relatedFileIds = files
       .filter((file) => file.folderId === folder.id)
@@ -479,7 +472,9 @@ export default function SourcesView() {
     setSelectedPdfName("");
   };
 
-  const handleDeleteFile = (file: SourceFile) => {
+  const handleDeleteFile = async (file: SourceFile) => {
+    const ok = await confirm();
+    if (!ok) return;
     setFiles((current) => current.filter((item) => item.id !== file.id));
     void deleteFromStore(FILES_STORE, file.id);
   };
@@ -909,7 +904,7 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
         open={isOpen}
         anchorRef={buttonRef}
         onClose={onClose}
-        className="w-40 rounded-lg border border-wenge-border-subtle bg-cuervo p-1.5 shadow-glow-card"
+        className="w-40"
       >
         <button
           type="button"
@@ -918,7 +913,7 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
             event.stopPropagation();
             onRename(event);
           }}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+          className="ui-floating-item flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.sources.rename}
@@ -931,7 +926,7 @@ function FolderMenu({ isOpen, onToggle, onClose, onRename, onDelete }: FolderMen
             event.stopPropagation();
             onDelete(event);
           }}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+          className="ui-floating-item-danger flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.sources.delete}

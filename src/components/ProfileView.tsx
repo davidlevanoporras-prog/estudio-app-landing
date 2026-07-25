@@ -23,8 +23,13 @@ import { languageOptions } from "../i18n/dictionary";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useLicense } from "../i18n/LicenseContext";
 import { hardResetLocalData } from "../lib/devReset";
+import { DEV_PRO_LICENSE_KEY } from "../lib/devPro";
+import { VIP_LICENSE_CODE, saveIsPremium } from "../lib/license";
+import { openExternalUrl, PRO_CHECKOUT_URL } from "../lib/openExternal";
+import { useUserStore } from "../store/userStore";
 import { VAULT_KEYS } from "../lib/vaultKeys";
 import { UI_SPEED_DURATION_MS, uiSpeedIds, type UiSpeed } from "../types/uiSpeed";
+import { useConfirm } from "./ConfirmProvider";
 
 export type SubscriptionPlan = "basic" | "pro";
 
@@ -35,7 +40,6 @@ type ProfileViewProps = {
   onSaveName: (name: string) => void;
   userCode: string;
   subscriptionPlan: SubscriptionPlan;
-  onUpgradeClick: () => void;
   profileImage: string | null;
   onProfileImageChange: (image: string | null) => void;
   uiSpeed: UiSpeed;
@@ -64,7 +68,6 @@ export default function ProfileView({
   onSaveName,
   userCode,
   subscriptionPlan,
-  onUpgradeClick,
   profileImage,
   onProfileImageChange,
   uiSpeed,
@@ -72,6 +75,7 @@ export default function ProfileView({
   onOpenThemeView,
 }: ProfileViewProps) {
   const { dict, language, setLanguage } = useLanguage();
+  const confirm = useConfirm();
   const { isPremium, redeemLicense } = useLicense();
   const [draftName, setDraftName] = useState(userName ?? "");
   const [copied, setCopied] = useState(false);
@@ -170,7 +174,7 @@ export default function ProfileView({
         <div
           role="status"
           aria-live="polite"
-          className="fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg border border-neutral-700 bg-neutral-950/95 px-5 py-3 text-sm tracking-wide text-neutral-100 shadow-2xl"
+          className="ui-floating fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg px-5 py-3 text-sm tracking-wide shadow-2xl"
         >
           {dict.profile.licenseVipToast}
         </div>
@@ -315,7 +319,9 @@ export default function ProfileView({
             </div>
             <button
               type="button"
-              onClick={onUpgradeClick}
+              onClick={() => {
+                void openExternalUrl(PRO_CHECKOUT_URL);
+              }}
               style={transitionStyle}
               className="premium-btn shrink-0 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all hover:border-primary hover:shadow-glow-card"
             >
@@ -570,7 +576,7 @@ export default function ProfileView({
         </div>
       </section>
 
-      {/* Modo Dev — reseteo duro de datos locales (solo en desarrollo). */}
+      {/* Modo Dev — herramientas locales (nunca en producción). */}
       {import.meta.env.DEV && (
         <section className="glow-card border border-rose-400/20 p-6">
           <h3 className="text-xs font-medium tracking-wider text-rose-300/80 uppercase">
@@ -579,18 +585,58 @@ export default function ProfileView({
           <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
             {dict.profileDev.toolsBody}
           </p>
-          <button
-            type="button"
-            onClick={() => {
-              if (window.confirm(dict.profileDev.resetConfirm)) {
-                void hardResetLocalData();
-              }
-            }}
-            className="premium-btn mt-4 flex items-center gap-2 rounded-lg border border-rose-400/35 px-3 py-2 text-xs font-medium tracking-wide text-rose-300 uppercase transition-colors hover:border-rose-300/60 hover:text-rose-200"
-          >
-            <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-            {dict.profileDev.resetButton}
-          </button>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                void (async () => {
+                  await useUserStore
+                    .getState()
+                    .activatePro(DEV_PRO_LICENSE_KEY);
+                  await redeemLicense(VIP_LICENSE_CODE);
+                })();
+              }}
+              className="premium-btn flex items-center gap-2 rounded-lg border border-emerald-400/35 px-3 py-2 text-xs font-medium tracking-wide text-emerald-300 uppercase transition-colors hover:border-emerald-300/60 hover:text-emerald-200"
+            >
+              <Crown className="h-3.5 w-3.5" strokeWidth={2} />
+              Activar Pro (dev)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void (async () => {
+                  useUserStore.getState().deactivatePro();
+                  await saveIsPremium(false);
+                  window.location.reload();
+                })();
+              }}
+              className="premium-btn flex items-center gap-2 rounded-lg border border-amber-400/35 px-3 py-2 text-xs font-medium tracking-wide text-amber-300 uppercase transition-colors hover:border-amber-300/60 hover:text-amber-200"
+            >
+              Desactivar Pro (dev)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                void (async () => {
+                  const ok = await confirm({
+                    confirmLabel: dict.profileDev.resetButton,
+                  });
+                  if (!ok) return;
+                  await hardResetLocalData();
+                })();
+              }}
+              className="premium-btn flex items-center gap-2 rounded-lg border border-rose-400/35 px-3 py-2 text-xs font-medium tracking-wide text-rose-300 uppercase transition-colors hover:border-rose-300/60 hover:text-rose-200"
+            >
+              <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+              {dict.profileDev.resetButton}
+            </button>
+          </div>
+          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/80">
+            Alternativa por terminal:{" "}
+            <code className="rounded bg-black/30 px-1.5 py-0.5 text-[10px] tracking-normal text-rose-200/90 normal-case">
+              npm run dev:pro
+            </code>
+          </p>
         </section>
       )}
     </div>

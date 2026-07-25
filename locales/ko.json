@@ -1,4 +1,11 @@
 {
+  "common": {
+    "confirmTitle": "확실합니까?",
+    "confirmPermanentMessage": "이 작업은 영구적이며 되돌릴 수 없습니다.",
+    "confirmAction": "확인",
+    "cancelLabel": "취소",
+    "deleteAction": "삭제"
+  },
   "sidebar": {
     "brand": "Estudio",
     "tagline": "고급 패널",
@@ -231,8 +238,8 @@
     "title": "새 카드",
     "questionLabel": "질문",
     "questionPlaceholder": "기억할 질문이나 개념을 작성하세요...",
-    "imageLabel": "이미지 추가 (선택)",
-    "noImageLabel": "이미지 없음",
+    "attachImageLabel": "이미지 첨부",
+    "removeImageLabel": "이미지 제거",
     "hintLabel": "힌트 (선택)",
     "hintPlaceholder": "답을 기억하는 데 도움이 되는 선택적 힌트...",
     "answerLabel": "답",
@@ -264,6 +271,8 @@
     "synapticStabilityDetail": "덱의 평균 용이도 지수",
     "curveTitle": "망각 곡선 모니터",
     "curveSubtitle": "분산 복습으로 안정화된 에빙하우스 감쇠",
+    "curveTooltip": "뇌가 시간에 따라 정보를 버리는 과정을 시각화한 것입니다. 알고리즘이 망각 시점을 예측하고 장기 유지를 위한 전략적 복습을 예약합니다.",
+    "curveTooltipLabel": "망각 곡선이란",
     "curveDayLabel": "일",
     "curveRetentionLabel": "기억 유지율"
   },

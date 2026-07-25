@@ -14,10 +14,17 @@ import {
   isNativeFilePickerAvailable,
   pickImageFile,
 } from "../lib/nativeFiles";
+import { handleImagePaste } from "../lib/pasteImage";
 import { deleteImage, getImage, saveImage } from "../utils/mediaStore";
 import { createInitialSrsState } from "../utils/spacedRepetition";
-import type { Deck, StudyCardData } from "../types/deck";
+import {
+  collectCardImageIds,
+  resolveQuestionImage,
+  type Deck,
+  type StudyCardData,
+} from "../types/deck";
 import ConfirmDialog from "./ConfirmDialog";
+import { useConfirm } from "./ConfirmProvider";
 
 let cardIdSequence = 0;
 function createCardId(): number {
@@ -47,6 +54,7 @@ export default function DeckEditorView({
   onDeleteDeck,
 }: DeckEditorViewProps) {
   const { dict, t } = useLanguage();
+  const confirm = useConfirm();
   const [draftCards, setDraftCards] = useState<StudyCardData[]>(
     () => deck?.cards ?? [],
   );
@@ -58,8 +66,16 @@ export default function DeckEditorView({
     setIsDirty(false);
   }, [deck?.id]);
 
-  const handleExit = () => {
-    if (isDirty && !window.confirm(dict.deckEditor.exitUnsavedConfirm)) return;
+  const handleExit = async () => {
+    if (isDirty) {
+      const ok = await confirm({
+        title: dict.common.confirmTitle,
+        message: dict.deckEditor.exitUnsavedConfirm,
+        confirmLabel: dict.common.confirmAction,
+        destructive: false,
+      });
+      if (!ok) return;
+    }
     onExit();
   };
 
@@ -88,34 +104,58 @@ export default function DeckEditorView({
     setIsDirty(true);
   };
 
-  const handleDeleteCard = (card: StudyCardData) => {
-    if (!window.confirm(dict.deckEditor.deleteCardConfirm)) return;
-    if (card.imageId) deleteImage(card.imageId).catch(() => {});
+  const handleDeleteCard = async (card: StudyCardData) => {
+    const ok = await confirm();
+    if (!ok) return;
+    for (const id of collectCardImageIds(card)) {
+      deleteImage(id).catch(() => {});
+    }
     setDraftCards((current) => current.filter((c) => c.id !== card.id));
     setIsDirty(true);
   };
 
-  const handleImageUpload = async (card: StudyCardData, file: File) => {
+  const handleImageUpload = async (
+    card: StudyCardData,
+    slot: "imageQuestion" | "imageHint" | "imageAnswer",
+    file: File,
+  ) => {
     try {
       const newImageId = await saveImage(file);
-      const previousImageId = card.imageId;
-      updateCard(card.id, { imageId: newImageId });
-      if (previousImageId) deleteImage(previousImageId).catch(() => {});
+      const previousImageId =
+        slot === "imageQuestion"
+          ? resolveQuestionImage(card)
+          : card[slot];
+      updateCard(card.id, {
+        [slot]: newImageId,
+        ...(slot === "imageQuestion" ? { imageId: undefined } : {}),
+      });
+      if (previousImageId && previousImageId !== newImageId) {
+        deleteImage(previousImageId).catch(() => {});
+      }
     } catch (error) {
       console.error("No se pudo guardar la imagen en la bóveda offline:", error);
     }
   };
 
-  const handleImageRemove = (card: StudyCardData) => {
-    if (card.imageId) deleteImage(card.imageId).catch(() => {});
-    updateCard(card.id, { imageId: undefined });
+  const handleImageRemove = (
+    card: StudyCardData,
+    slot: "imageQuestion" | "imageHint" | "imageAnswer",
+  ) => {
+    const previousImageId =
+      slot === "imageQuestion" ? resolveQuestionImage(card) : card[slot];
+    if (previousImageId) deleteImage(previousImageId).catch(() => {});
+    updateCard(card.id, {
+      [slot]: undefined,
+      ...(slot === "imageQuestion" ? { imageId: undefined } : {}),
+    });
   };
 
   const handleConfirmDeleteDeck = () => {
     if (!deck) return;
-    // Limpia blobs de IndexedDB de las tarjetas del borrador.
     for (const card of draftCards) {
-      if (card.imageId) deleteImage(card.imageId).catch(() => {});
+      for (const id of collectCardImageIds(card)) {
+        deleteImage(id).catch(() => {});
+      }
     }
     onDeleteDeck(deck.id);
     setShowDeleteDeckConfirm(false);
@@ -171,8 +211,10 @@ export default function DeckEditorView({
                 card={card}
                 index={index}
                 onFieldChange={(patch) => updateCard(card.id, patch)}
-                onImageUpload={(file) => handleImageUpload(card, file)}
-                onImageRemove={() => handleImageRemove(card)}
+                onImageUpload={(slot, file) =>
+                  handleImageUpload(card, slot, file)
+                }
+                onImageRemove={(slot) => handleImageRemove(card, slot)}
                 onDelete={() => handleDeleteCard(card)}
               />
             ))}
@@ -212,10 +254,10 @@ export default function DeckEditorView({
 
       {showDeleteDeckConfirm && deck && (
         <ConfirmDialog
-          title={dict.flashcards.deleteConfirmTitle}
-          message={t(dict.flashcards.deleteDeckConfirm, { name: deck.name })}
-          confirmLabel={dict.deckEditor.deleteDeckButton}
-          cancelLabel={dict.flashcards.cancelLabel}
+          title={dict.common.confirmTitle}
+          message={dict.common.confirmPermanentMessage}
+          confirmLabel={dict.common.deleteAction}
+          cancelLabel={dict.common.cancelLabel}
           destructive
           onConfirm={handleConfirmDeleteDeck}
           onCancel={() => setShowDeleteDeckConfirm(false)}
@@ -253,12 +295,14 @@ function DeckNotFoundState({ onExit }: { onExit: () => void }) {
   );
 }
 
+type ImageSlotKey = "imageQuestion" | "imageHint" | "imageAnswer";
+
 type CardEditorRowProps = {
   card: StudyCardData;
   index: number;
   onFieldChange: (patch: Partial<StudyCardData>) => void;
-  onImageUpload: (file: File) => void;
-  onImageRemove: () => void;
+  onImageUpload: (slot: ImageSlotKey, file: File) => void;
+  onImageRemove: (slot: ImageSlotKey) => void;
   onDelete: () => void;
 };
 
@@ -289,33 +333,34 @@ function CardEditorRow({
         </button>
       </div>
 
-      <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start">
-        <div className="min-w-0 flex-1 space-y-4">
-          <EditableField
-            label={dict.deckEditor.questionLabel}
-            value={card.front}
-            placeholder={dict.deckEditor.questionPlaceholder}
-            onChange={(front) => onFieldChange({ front })}
-          />
-          <EditableField
-            label={dict.deckEditor.hintLabel}
-            value={card.hint}
-            placeholder={dict.deckEditor.hintPlaceholder}
-            onChange={(hint) => onFieldChange({ hint })}
-            rows={1}
-          />
-          <EditableField
-            label={dict.deckEditor.answerLabel}
-            value={card.back}
-            placeholder={dict.deckEditor.answerPlaceholder}
-            onChange={(back) => onFieldChange({ back })}
-          />
-        </div>
-
-        <ImageSlot
-          imageId={card.imageId}
-          onUpload={onImageUpload}
-          onRemove={onImageRemove}
+      <div className="mt-4 space-y-4">
+        <EditableField
+          label={dict.deckEditor.questionLabel}
+          value={card.front}
+          placeholder={dict.deckEditor.questionPlaceholder}
+          onChange={(front) => onFieldChange({ front })}
+          imageId={resolveQuestionImage(card)}
+          onImageUpload={(file) => onImageUpload("imageQuestion", file)}
+          onImageRemove={() => onImageRemove("imageQuestion")}
+        />
+        <EditableField
+          label={dict.deckEditor.hintLabel}
+          value={card.hint}
+          placeholder={dict.deckEditor.hintPlaceholder}
+          onChange={(hint) => onFieldChange({ hint })}
+          rows={1}
+          imageId={card.imageHint}
+          onImageUpload={(file) => onImageUpload("imageHint", file)}
+          onImageRemove={() => onImageRemove("imageHint")}
+        />
+        <EditableField
+          label={dict.deckEditor.answerLabel}
+          value={card.back}
+          placeholder={dict.deckEditor.answerPlaceholder}
+          onChange={(back) => onFieldChange({ back })}
+          imageId={card.imageAnswer}
+          onImageUpload={(file) => onImageUpload("imageAnswer", file)}
+          onImageRemove={() => onImageRemove("imageAnswer")}
         />
       </div>
     </article>
@@ -328,6 +373,9 @@ type EditableFieldProps = {
   placeholder: string;
   onChange: (value: string) => void;
   rows?: number;
+  imageId?: string;
+  onImageUpload: (file: File) => void;
+  onImageRemove: () => void;
 };
 
 function EditableField({
@@ -336,17 +384,45 @@ function EditableField({
   placeholder,
   onChange,
   rows = 2,
+  imageId,
+  onImageUpload,
+  onImageRemove,
 }: EditableFieldProps) {
   return (
     <div>
-      <label className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
-        {label}
-      </label>
+      <div className="flex items-center justify-between gap-2">
+        <label className="text-[10px] font-medium tracking-wider text-muted-foreground uppercase">
+          {label}
+        </label>
+        <ImageSlot
+          compact
+          imageId={imageId}
+          onUpload={onImageUpload}
+          onRemove={onImageRemove}
+        />
+      </div>
       <textarea
         rows={rows}
         value={value}
         placeholder={placeholder}
         onChange={(event) => onChange(event.target.value)}
+        onPaste={(event) => {
+          const item = Array.from(event.clipboardData?.items ?? []).find(
+            (entry) => entry.type.startsWith("image/"),
+          );
+          const file = item?.getAsFile();
+          if (file) {
+            event.preventDefault();
+            onImageUpload(file);
+            return;
+          }
+          void handleImagePaste(event, (markdown) => {
+            const el = event.currentTarget;
+            const start = el.selectionStart ?? value.length;
+            const end = el.selectionEnd ?? value.length;
+            onChange(value.slice(0, start) + markdown + value.slice(end));
+          });
+        }}
         className="mt-1 w-full resize-none border-0 border-b border-card-rest bg-transparent px-0 py-1.5 text-sm text-foreground outline-none transition-colors duration-300 placeholder:text-muted-foreground focus:border-primary"
       />
     </div>
@@ -357,13 +433,14 @@ type ImageSlotProps = {
   imageId?: string;
   onUpload: (file: File) => void;
   onRemove: () => void;
+  /** Compacto: icono + miniatura inline junto al label del campo. */
+  compact?: boolean;
 };
 
 /**
- * Miniatura o botón "+ Añadir Imagen". En Tauri abre el diálogo nativo
- * del SO (png/jpg/jpeg); fuera del shell, el `<input type="file">`.
+ * Miniatura o botón adjuntar. En Tauri: diálogo nativo; en web: `<input type="file">`.
  */
-function ImageSlot({ imageId, onUpload, onRemove }: ImageSlotProps) {
+function ImageSlot({ imageId, onUpload, onRemove, compact = false }: ImageSlotProps) {
   const { dict } = useLanguage();
   const inputRef = useRef<HTMLInputElement>(null);
   const [isPicking, setIsPicking] = useState(false);
@@ -394,7 +471,12 @@ function ImageSlot({ imageId, onUpload, onRemove }: ImageSlotProps) {
   return (
     <div className="shrink-0">
       {imageId ? (
-        <div className="group relative h-24 w-24 overflow-hidden rounded-lg border border-card-rest">
+        <div
+          className={[
+            "group relative overflow-hidden rounded-lg border border-card-rest",
+            compact ? "h-10 w-10" : "h-24 w-24",
+          ].join(" ")}
+        >
           <ImageThumbnail imageId={imageId} />
 
           <button
@@ -405,7 +487,7 @@ function ImageSlot({ imageId, onUpload, onRemove }: ImageSlotProps) {
             title={dict.deckEditor.changeImageButton}
             className="absolute inset-0 flex items-center justify-center bg-black/0 text-transparent transition-all duration-200 group-hover:bg-black/50 group-hover:text-white disabled:pointer-events-none"
           >
-            <ImagePlus className="h-4 w-4" strokeWidth={2} />
+            <ImagePlus className="h-3.5 w-3.5" strokeWidth={2} />
           </button>
 
           <button
@@ -413,9 +495,9 @@ function ImageSlot({ imageId, onUpload, onRemove }: ImageSlotProps) {
             onClick={onRemove}
             aria-label={dict.deckEditor.removeImageLabel}
             title={dict.deckEditor.removeImageLabel}
-            className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:bg-rose-500/80"
+            className="absolute top-0.5 right-0.5 z-10 flex h-4 w-4 items-center justify-center rounded-full border border-card-rest bg-card text-muted-foreground opacity-0 transition-opacity duration-200 group-hover:opacity-100 hover:text-rose-500"
           >
-            <X className="h-3 w-3" strokeWidth={2.5} />
+            <X className="h-2.5 w-2.5" strokeWidth={2.5} />
           </button>
         </div>
       ) : (
@@ -423,16 +505,22 @@ function ImageSlot({ imageId, onUpload, onRemove }: ImageSlotProps) {
           type="button"
           onClick={() => void openPicker()}
           disabled={isPicking}
-          className="premium-btn flex h-24 w-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-card-rest text-icon-muted transition-all duration-300 hover:border-primary hover:text-primary disabled:opacity-50"
+          aria-label={dict.deckEditor.addImageButton}
+          title={dict.deckEditor.addImageButton}
+          className={[
+            "premium-btn inline-flex items-center justify-center rounded-md border border-card-rest text-icon-muted transition-all duration-300 hover:border-primary hover:text-primary disabled:opacity-50",
+            compact ? "h-7 w-7" : "h-24 w-24 flex-col gap-1",
+          ].join(" ")}
         >
-          <ImagePlus className="h-4 w-4" strokeWidth={2} />
-          <span className="text-center text-[10px] font-medium leading-tight">
-            {dict.deckEditor.addImageButton}
-          </span>
+          <ImagePlus className="h-3.5 w-3.5" strokeWidth={2} />
+          {!compact && (
+            <span className="text-center text-[10px] font-medium leading-tight">
+              {dict.deckEditor.addImageButton}
+            </span>
+          )}
         </button>
       )}
 
-      {/* Respaldo para Vite en navegador (sin shell Tauri). */}
       <input
         ref={inputRef}
         type="file"

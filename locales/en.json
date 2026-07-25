@@ -1,4 +1,11 @@
 {
+  "common": {
+    "confirmTitle": "Are you sure?",
+    "confirmPermanentMessage": "This action is permanent and cannot be undone.",
+    "confirmAction": "Confirm",
+    "cancelLabel": "Cancel",
+    "deleteAction": "Delete"
+  },
   "sidebar": {
     "brand": "Estudio",
     "tagline": "Advanced Panel",
@@ -231,8 +238,8 @@
     "title": "New Card",
     "questionLabel": "Question",
     "questionPlaceholder": "Write the question or concept to remember...",
-    "imageLabel": "Add image (Optional)",
-    "noImageLabel": "No image",
+    "attachImageLabel": "Attach image",
+    "removeImageLabel": "Remove image",
     "hintLabel": "Hint (Optional)",
     "hintPlaceholder": "An optional hint to help recall the answer...",
     "answerLabel": "Answer",
@@ -264,6 +271,8 @@
     "synapticStabilityDetail": "average ease factor of the deck",
     "curveTitle": "Forgetting Curve Monitor",
     "curveSubtitle": "Ebbinghaus decay stabilized by spaced review",
+    "curveTooltip": "A visual representation of how your brain discards information over time. Our algorithm predicts the exact moment of forgetting and schedules strategic reviews to force long-term retention.",
+    "curveTooltipLabel": "What is the Forgetting Curve",
     "curveDayLabel": "Day",
     "curveRetentionLabel": "Retention"
   },
@@ -344,10 +353,10 @@
     "syntaxHelp": "Syntax Help",
     "helpTitle": "How to create training cards",
     "helpBody": "Wrap the word or phrase you want to hide using double brackets.",
-    "helpExample": "The longest bone in the body is the [[femur]].",
-    "helpDistractors": "Add the false options in the distractor fields below.",
-    "sentencePlaceholder": "Write your sentence and wrap the answer in double brackets. E.g.: The main tissue of the heart is the [[myocardium]].",
-    "syntaxError": "Incomplete syntax: wrap the answer in [[ ]]",
+    "helpExample": "The [[muscle tissue]] of the heart is the [[myocardium]].",
+    "helpDistractors": "Add the false options in the distractor fields below. You can use several [[blanks]] and multiple words inside each one.",
+    "sentencePlaceholder": "Write your sentence and wrap each answer in double brackets. E.g.: The [[muscle tissue]] of the heart is the [[myocardium]].",
+    "syntaxError": "Incomplete syntax: wrap each answer in [[ ]] (multiple blanks allowed)",
     "preview": "Preview",
     "previewEmpty": "Wrap the answer in [[double brackets]] to see the blank.",
     "distractors": "Distractors",

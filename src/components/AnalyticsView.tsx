@@ -8,6 +8,7 @@ import {
   type RatingCounts,
 } from "../lib/studyStats";
 import type { Deck } from "../types/deck";
+import { useConfirm } from "./ConfirmProvider";
 
 type AnalyticsViewProps = {
   decks: Deck[];
@@ -20,6 +21,7 @@ type AnalyticsViewProps = {
  */
 export default function AnalyticsView({ decks }: AnalyticsViewProps) {
   const { dict } = useLanguage();
+  const confirm = useConfirm();
 
   // Snapshot al montar: esta vista se desmonta/remonta con cada cambio de
   // pestaña del sidebar, así que siempre refleja el estado más reciente.
@@ -34,9 +36,11 @@ export default function AnalyticsView({ decks }: AnalyticsViewProps) {
     ? getDeckCounts(stats, selectedDeckId)
     : null;
 
-  const handleReset = () => {
-    const confirmed = window.confirm(dict.analytics.resetConfirm);
-    if (!confirmed) return;
+  const handleReset = async () => {
+    const ok = await confirm({
+      confirmLabel: dict.analytics.resetButton,
+    });
+    if (!ok) return;
     setStats(clearStudyStats());
   };
 

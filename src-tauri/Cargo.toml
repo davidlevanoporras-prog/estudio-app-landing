@@ -23,6 +23,7 @@ tauri = { version = "2.11.3", features = ["protocol-asset"] }
 tauri-plugin-dialog = "2.7.2"
 tauri-plugin-fs = "2"
 tauri-plugin-log = "2"
+tauri-plugin-opener = "2.5.4"
 # "Bóveda de Titanio" (Misión 1): motor de persistencia clave-valor nativo,
 # respaldado por un único archivo en disco por store — ver `lib.rs` para el
 # registro del plugin y `src/lib/appStore.ts` (frontend) para el consumo.

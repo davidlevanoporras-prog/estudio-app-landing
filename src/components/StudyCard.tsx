@@ -1,8 +1,11 @@
 import { useEffect, useState, type KeyboardEvent } from "react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { registrarAperturaTarjeta } from "../lib/streak";
+import {
+  resolveQuestionImage,
+  type StudyCardData,
+} from "../types/deck";
 import { getImage } from "../utils/mediaStore";
-import type { StudyCardData } from "../types/deck";
 import RichTextRenderer from "./RichTextRenderer";
 
 export type { StudyCardData };
@@ -14,22 +17,13 @@ type StudyCardProps = {
 };
 
 /**
- * "La Tarjeta Monolítica 3D" — el corazón visual del Quirófano Matemático.
- * Un único bloque de 600×400 (con topes responsivos para no desbordar en
- * pantallas pequeñas), controlado por el padre (`isFlipped`/`onFlip` —
- * `StudyView.tsx` es quien decide cuándo mostrar el Centro de Mando
- * Táctico, ver Misión 4: "los botones SOLO existen en el DOM tras el giro").
- *
- * El giro es un flip 3D real (`perspective` + `rotateY` + `backface-visibility`,
- * ver las utilidades `flip-*` en `src/index.css`) — no una animación de
- * opacidad disfrazada de flip.
+ * Tarjeta Monolítica 3D — frente y reverso comparten exactamente el mismo
+ * tratamiento de color (tokens de tema). El giro solo cambia el contenido.
+ * Textos densos viven en un viewport con scroll premium (`.ui-scrollbar`).
  */
 export default function StudyCard({ card, isFlipped, onFlip }: StudyCardProps) {
   const { dict } = useLanguage();
 
-  // Mismo disparador de racha que la versión anterior de esta tarjeta: se
-  // dispara al abrir una tarjeta nueva para estudiar, nunca al voltearla de
-  // vuelta (por eso depende solo de `card.id`, no de `isFlipped`).
   useEffect(() => {
     void registrarAperturaTarjeta();
   }, [card.id]);
@@ -51,7 +45,7 @@ export default function StudyCard({ card, isFlipped, onFlip }: StudyCardProps) {
       aria-label={
         isFlipped ? dict.studyCard.flipToQuestion : dict.studyCard.flipToAnswer
       }
-      className="flip-scene h-[400px] w-[600px] max-h-[70vh] max-w-[92vw] cursor-pointer rounded-2xl outline-none select-none focus-visible:ring-2 focus-visible:ring-primary/60"
+      className="flip-scene h-[min(560px,75vh)] w-full max-w-3xl cursor-pointer rounded-2xl outline-none select-none focus-visible:ring-2 focus-visible:ring-primary/60"
     >
       <div
         className={[
@@ -71,56 +65,63 @@ type CardFaceProps = {
   side: "front" | "back";
 };
 
-/**
- * Fondo basalto (`bg-neutral-900`) + bordes sutiles grises + texto Serif
- * inmaculado (Playfair Display, vía `style` inline) — el "Silent Luxury" de
- * esta Misión. La cara trasera lleva un borde ámbar apenas perceptible
- * (`border-primary/25`) para que el giro se sienta como una revelación, no
- * como un duplicado plano.
- */
 function CardFace({ card, side }: CardFaceProps) {
   const { dict } = useLanguage();
   const isBack = side === "back";
+  const questionImage = resolveQuestionImage(card);
 
   return (
     <div
       className={[
-        "flip-card-face flex flex-col items-center justify-center gap-6 rounded-2xl border bg-neutral-900 px-10 py-10 text-center shadow-[0_30px_70px_-20px_rgba(0,0,0,0.65)]",
-        isBack ? "flip-card-face-back border-primary/25" : "border-neutral-700/60",
+        "flip-card-face flashcard-face flex flex-col overflow-hidden rounded-2xl border border-card-rest bg-card text-card-foreground",
+        isBack ? "flip-card-face-back" : "",
       ].join(" ")}
     >
-      {card.tag && (
-        <span className="rounded-full border border-primary/30 bg-primary-soft px-3 py-1 text-[11px] font-medium tracking-[0.15em] text-primary uppercase">
-          {card.tag}
-        </span>
-      )}
+      <div className="ui-scrollbar max-h-[60vh] min-h-0 w-full flex-1 overflow-y-auto">
+        <div className="flex min-h-full w-full flex-col items-center justify-center gap-5 px-8 py-8 text-center sm:px-12 sm:py-10">
+          {card.tag && (
+            <span className="shrink-0 rounded-full border border-primary/30 bg-primary-soft px-3 py-1 text-[11px] font-medium tracking-[0.15em] text-primary uppercase">
+              {card.tag}
+            </span>
+          )}
 
-      {!isBack && card.imageId && <CardImage imageId={card.imageId} />}
+          {!isBack && questionImage && <CardImage imageId={questionImage} />}
 
-      <div
-        className={[
-          "max-w-md text-2xl leading-relaxed",
-          isBack ? "text-primary" : "text-neutral-100",
-        ].join(" ")}
-        style={{ fontFamily: "'Playfair Display', serif" }}
-      >
-        <RichTextRenderer content={isBack ? card.back : card.front} />
+          <div
+            className="w-full max-w-2xl text-2xl leading-relaxed text-foreground"
+            style={{ fontFamily: "'Playfair Display', serif" }}
+          >
+            <RichTextRenderer content={isBack ? card.back : card.front} />
+          </div>
+
+          {isBack && card.imageAnswer && (
+            <CardImage imageId={card.imageAnswer} />
+          )}
+
+          {!isBack && card.hint.trim().length > 0 && (
+            <div className="flex w-full max-w-xl flex-col items-center gap-3">
+              {card.imageHint && <CardImage imageId={card.imageHint} />}
+              <div className="w-full text-sm leading-relaxed text-muted-foreground">
+                <RichTextRenderer content={card.hint} />
+              </div>
+            </div>
+          )}
+
+          {!isBack && card.hint.trim().length === 0 && card.imageHint && (
+            <CardImage imageId={card.imageHint} />
+          )}
+
+          {!isBack && (
+            <span className="shrink-0 text-xs font-medium tracking-[0.2em] text-muted-foreground uppercase">
+              {dict.studyCard.tapToFlip}
+            </span>
+          )}
+        </div>
       </div>
-
-      {!isBack && (
-        <span className="text-xs font-medium tracking-[0.2em] text-neutral-500 uppercase">
-          {dict.studyCard.tapToFlip}
-        </span>
-      )}
     </div>
   );
 }
 
-/**
- * Recupera de forma asíncrona la imagen desde IndexedDB (ver
- * `src/utils/mediaStore.ts`) como Object URL. Revoca la URL al desmontar o
- * cambiar de tarjeta para no acumular memoria.
- */
 function CardImage({ imageId }: { imageId: string }) {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
@@ -137,7 +138,7 @@ function CardImage({ imageId }: { imageId: string }) {
         setImageUrl(url);
       })
       .catch(() => {
-        /* imagen no encontrada o IndexedDB no disponible — se omite en silencio */
+        /* imagen no encontrada — se omite en silencio */
       });
 
     return () => {
@@ -148,11 +149,5 @@ function CardImage({ imageId }: { imageId: string }) {
 
   if (!imageUrl) return null;
 
-  return (
-    <img
-      src={imageUrl}
-      alt=""
-      className="max-h-28 w-full rounded-md object-contain"
-    />
-  );
+  return <img src={imageUrl} alt="" className="flashcard-media shrink-0" />;
 }

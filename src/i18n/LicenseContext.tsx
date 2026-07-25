@@ -12,6 +12,7 @@ import {
   loadIsPremium,
   saveIsPremium,
 } from "../lib/license";
+import { isDevProForced } from "../lib/devPro";
 
 type LicenseContextValue = {
   /** `false` por defecto — hasta canjear God Mode. */
@@ -40,7 +41,8 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     let isMounted = true;
     void loadIsPremium().then((value) => {
       if (!isMounted) return;
-      setIsPremium(value);
+      // Flag VITE_DEV_PRO: solo en Vite DEV; nunca en producción.
+      setIsPremium(value || isDevProForced());
       setIsLoading(false);
     });
     return () => {

@@ -9,6 +9,13 @@ export const LANGUAGE_STORAGE_KEY = "estudio-language";
  * structure. Strings may contain `{{placeholders}}` resolved via `interpolate()`.
  */
 export type Dictionary = {
+  common: {
+    confirmTitle: string;
+    confirmPermanentMessage: string;
+    confirmAction: string;
+    cancelLabel: string;
+    deleteAction: string;
+  };
   sidebar: {
     brand: string;
     tagline: string;
@@ -220,8 +227,8 @@ export type Dictionary = {
     title: string;
     questionLabel: string;
     questionPlaceholder: string;
-    imageLabel: string;
-    noImageLabel: string;
+    attachImageLabel: string;
+    removeImageLabel: string;
     hintLabel: string;
     hintPlaceholder: string;
     answerLabel: string;
@@ -253,6 +260,8 @@ export type Dictionary = {
     synapticStabilityDetail: string;
     curveTitle: string;
     curveSubtitle: string;
+    curveTooltip: string;
+    curveTooltipLabel: string;
     curveDayLabel: string;
     curveRetentionLabel: string;
   };

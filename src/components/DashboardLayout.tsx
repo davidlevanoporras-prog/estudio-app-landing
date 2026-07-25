@@ -56,6 +56,7 @@ import StudyView from "./StudyView";
 import ThemeView from "./ThemeView";
 import TimeAnalyticsView from "./TimeAnalyticsView";
 import SimulatorView from "../views/SimulatorView";
+import { useUserStore } from "../store/userStore";
 
 type ViewId =
   | "dashboard"
@@ -197,14 +198,15 @@ export default function DashboardLayout({
   const [accentColor, setAccentColor] = useState<string | null>(null);
   const { dict, t } = useLanguage();
   const { isPremium } = useLicense();
+  const isPro = useUserStore((state) => state.isPro);
+  const isProUser = isPremium || isPro;
   /** Modal Silent Luxury del Paywall — se abre al tocar Asistente sin Pro. */
   const [showPaywallModal, setShowPaywallModal] = useState(false);
   /** Drawer del Sidebar en viewport móvil (< md). En desktop el aside es fijo. */
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const [userCode] = useState("#USR-9982");
-  const [subscriptionPlan, setSubscriptionPlan] =
-    useState<SubscriptionPlan>("pro");
+  const subscriptionPlan: SubscriptionPlan = isProUser ? "pro" : "basic";
 
   // Avatar dinámico: nace vacío (usa la inicial) hasta que el usuario suba
   // una foto desde ProfileView vía `URL.createObjectURL`.
@@ -714,7 +716,7 @@ export default function DashboardLayout({
               {dict.sidebar.planLabel}
             </p>
             <p className="mt-1 text-sm font-semibold text-foreground">
-              {dict.sidebar.planValue}
+              {isProUser ? dict.profile.plans.pro : dict.profile.plans.basic}
             </p>
           </div>
         </div>
@@ -1000,9 +1002,6 @@ export default function DashboardLayout({
                   onSaveName={onUserNameChange}
                   userCode={userCode}
                   subscriptionPlan={subscriptionPlan}
-                  onUpgradeClick={() =>
-                    setSubscriptionPlan((plan) => (plan === "basic" ? "pro" : plan))
-                  }
                   profileImage={profileImage}
                   onProfileImageChange={setProfileImage}
                   uiSpeed={uiSpeed}
@@ -1042,32 +1041,32 @@ function PaywallModal({ onDismiss }: { onDismiss: () => void }) {
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
       aria-labelledby="paywall-title"
       onClick={onDismiss}
     >
       <div
-        className="w-full max-w-md rounded-lg border border-neutral-800 bg-neutral-950 p-8 shadow-2xl"
+        className="ui-floating w-full max-w-md rounded-xl p-8 shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-neutral-800 text-neutral-400">
+        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-card-rest text-icon-muted">
           <Lock className="h-5 w-5" strokeWidth={1.75} />
         </div>
         <h2
           id="paywall-title"
-          className="mt-5 text-center text-lg font-medium tracking-tight text-neutral-100"
+          className="mt-5 text-center text-lg font-medium tracking-tight text-foreground"
         >
           {dict.paywall.title}
         </h2>
-        <p className="mt-3 text-center text-sm leading-relaxed text-neutral-400">
+        <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground">
           {dict.paywall.navLockedMessage}
         </p>
         <button
           type="button"
           onClick={onDismiss}
-          className="mt-7 w-full rounded-md border border-neutral-700 px-4 py-2.5 text-xs font-medium tracking-[0.14em] text-neutral-200 uppercase transition-colors hover:border-neutral-500 hover:text-neutral-50"
+          className="mt-7 w-full rounded-md border border-card-rest px-4 py-2.5 text-xs font-medium tracking-[0.14em] text-secondary-foreground uppercase transition-colors hover:border-primary/40 hover:text-foreground"
         >
           {dict.paywall.dismissLabel}
         </button>
@@ -1156,17 +1155,17 @@ function AssistantNavItem({
         <div
           role="menu"
           aria-label={dict.assistant.submenuLabel}
-          className="w-56 rounded-lg border border-neutral-800 bg-neutral-900 p-1.5 shadow-2xl"
+          className="ui-floating w-56 rounded-lg p-1.5 shadow-2xl"
         >
           <button
             type="button"
             role="menuitem"
             onClick={() => onSelectMode("inquisidor")}
             className={[
-              "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors duration-150",
+              "ui-floating-item flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors duration-150",
               isActive && activeMode === "inquisidor"
-                ? "bg-neutral-800 text-neutral-100"
-                : "text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100",
+                ? "bg-primary-soft text-primary"
+                : "",
             ].join(" ")}
           >
             <Crosshair
@@ -1183,10 +1182,10 @@ function AssistantNavItem({
             role="menuitem"
             onClick={() => onSelectMode("catedratico")}
             className={[
-              "flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors duration-150",
+              "ui-floating-item flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors duration-150",
               isActive && activeMode === "catedratico"
-                ? "bg-neutral-800 text-neutral-100"
-                : "text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100",
+                ? "bg-primary-soft text-primary"
+                : "",
             ].join(" ")}
           >
             <GraduationCap
@@ -1223,11 +1222,11 @@ function LockedAssistantMode({
     <div
       role="menuitem"
       aria-disabled="true"
-      className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-neutral-600"
+      className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground/60"
     >
       <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
       <span className="flex-1 font-medium">{label}</span>
-      <span className="rounded border border-neutral-800 px-1.5 py-0.5 text-[9px] font-medium tracking-wider text-neutral-500 uppercase">
+      <span className="rounded border border-card-rest px-1.5 py-0.5 text-[9px] font-medium tracking-wider text-muted-foreground uppercase">
         {badge}
       </span>
     </div>

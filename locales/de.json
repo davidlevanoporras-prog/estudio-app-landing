@@ -1,4 +1,11 @@
 {
+  "common": {
+    "confirmTitle": "Bist du sicher?",
+    "confirmPermanentMessage": "Diese Aktion ist dauerhaft und kann nicht rückgängig gemacht werden.",
+    "confirmAction": "Bestätigen",
+    "cancelLabel": "Abbrechen",
+    "deleteAction": "Löschen"
+  },
   "sidebar": {
     "brand": "Estudio",
     "tagline": "Erweitertes Panel",
@@ -231,8 +238,8 @@
     "title": "Neue Karte",
     "questionLabel": "Frage",
     "questionPlaceholder": "Schreibe die Frage oder das zu merkende Konzept...",
-    "imageLabel": "Bild hinzufügen (Optional)",
-    "noImageLabel": "Kein Bild",
+    "attachImageLabel": "Bild anhängen",
+    "removeImageLabel": "Bild entfernen",
     "hintLabel": "Hinweis (Optional)",
     "hintPlaceholder": "Ein optionaler Hinweis, der beim Erinnern der Antwort hilft...",
     "answerLabel": "Antwort",
@@ -264,6 +271,8 @@
     "synapticStabilityDetail": "durchschnittlicher Ease-Faktor des Stapels",
     "curveTitle": "Vergessenskurven-Monitor",
     "curveSubtitle": "Ebbinghaus-Zerfall, stabilisiert durch verteilte Wiederholung",
+    "curveTooltip": "Visuelle Darstellung, wie dein Gehirn Informationen mit der Zeit verwirft. Unser Algorithmus sagt den genauen Moment des Vergessens voraus und plant strategische Wiederholungen für langfristige Retention.",
+    "curveTooltipLabel": "Was ist die Vergessenskurve",
     "curveDayLabel": "Tag",
     "curveRetentionLabel": "Retention"
   },

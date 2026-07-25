@@ -1,4 +1,11 @@
 {
+  "common": {
+    "confirmTitle": "よろしいですか？",
+    "confirmPermanentMessage": "この操作は永続的で、元に戻すことはできません。",
+    "confirmAction": "確認",
+    "cancelLabel": "キャンセル",
+    "deleteAction": "削除"
+  },
   "sidebar": {
     "brand": "Estudio",
     "tagline": "アドバンストパネル",
@@ -231,8 +238,8 @@
     "title": "新しいカード",
     "questionLabel": "問題",
     "questionPlaceholder": "覚えたい質問や概念を入力してください...",
-    "imageLabel": "画像を追加（任意）",
-    "noImageLabel": "画像なし",
+    "attachImageLabel": "画像を添付",
+    "removeImageLabel": "画像を削除",
     "hintLabel": "ヒント（任意）",
     "hintPlaceholder": "答えを思い出すのに役立つヒント（任意）...",
     "answerLabel": "答え",
@@ -264,6 +271,8 @@
     "synapticStabilityDetail": "デッキの平均イーズファクター",
     "curveTitle": "忘却曲線モニター",
     "curveSubtitle": "分散反復によって安定化されたエビングハウス減衰",
+    "curveTooltip": "脳が時間とともに情報を捨てていく様子の視覚表現です。アルゴリズムが忘却の瞬間を予測し、長期定着のための戦略的な復習を計画します。",
+    "curveTooltipLabel": "忘却曲線とは",
     "curveDayLabel": "日",
     "curveRetentionLabel": "保持率"
   },

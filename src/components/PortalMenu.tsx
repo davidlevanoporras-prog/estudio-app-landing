@@ -66,7 +66,6 @@ export function PortalMenu({
     };
 
     update();
-    // Recalcula tras montar el menú (width real).
     const raf = requestAnimationFrame(update);
     window.addEventListener("resize", update);
     window.addEventListener("scroll", update, true);
@@ -105,7 +104,12 @@ export function PortalMenu({
     <div
       ref={menuRef}
       role="menu"
-      className={["fixed z-[100]", className].join(" ")}
+      className={[
+        "ui-floating fixed z-[100] rounded-lg p-1.5",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={
         coords
           ? { top: coords.top, left: coords.left }

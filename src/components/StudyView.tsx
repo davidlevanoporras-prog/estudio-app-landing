@@ -1,12 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, ImagePlus, Plus, Sparkles, X } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
+import { handleImagePaste } from "../lib/pasteImage";
 import { recordRatingStat, type RatingKind } from "../lib/studyStats";
 import { useFlashcardStore } from "../store/flashcardStore";
 import type { Deck, StudyCardData } from "../types/deck";
-import type { Flashcard } from "../types/schema";
 import { saveImage } from "../utils/mediaStore";
-import { createInitialSrsState } from "../utils/spacedRepetition";
+import {
+  createInitialSrsState,
+  isCardDue,
+} from "../utils/spacedRepetition";
 import {
   calculateNextReview,
   type ReviewGrade,
@@ -27,30 +30,6 @@ const GRADE_TO_RATING_KIND: Record<ReviewGrade, RatingKind> = {
   4: "easy",
 };
 
-/** Adapta `Flashcard` (bóveda) al contrato visual de `StudyCard` sin tocar su markup. */
-function toStudyCardData(card: Flashcard): StudyCardData {
-  let hash = 0;
-  for (let i = 0; i < card.id.length; i += 1) {
-    hash = (hash * 31 + card.id.charCodeAt(i)) | 0;
-  }
-  return {
-    id: Math.abs(hash) || 1,
-    front: card.front,
-    hint: "",
-    back: card.back,
-    tag: card.tags[0],
-    interval: card.interval,
-    easeFactor: card.easeFactor,
-    nextReviewDate: card.nextReview,
-  };
-}
-
-function isFlashcardDue(nextReview: string, nowMs: number = Date.now()): boolean {
-  const due = Date.parse(nextReview);
-  if (Number.isNaN(due)) return true;
-  return due <= nowMs;
-}
-
 type StudyViewProps = {
   deck: Deck | undefined;
   onExit: () => void;
@@ -63,26 +42,13 @@ type StudyViewProps = {
 
 /**
  * "El Quirófano Matemático" — Tarjeta Monolítica 3D + motor SM-2.
- *
- * A diferencia de la sesión "0+0+0" anterior (cola con estados
- * new/learning/review persistida en `localStorage`), aquí cada tarjeta
- * lleva su propio progreso SM-2 (`interval`/`easeFactor`/`nextReviewDate`,
- * ver `src/types/deck.ts`) directamente en `deck.cards` — ese progreso YA
- * se persiste en disco físico, porque `DashboardLayout.tsx` sobrescribe y
- * guarda (`saveDecks()`) el mazo completo en la Bóveda tras cada cambio
- * (Misión 2). Por eso `StudyView` no necesita cola propia persistida: solo
- * recorre — con un índice secuencial que da la vuelta al llegar al final —
- * el subconjunto de `deck.cards` que "El Filtro del Olvido" (Misión 3)
- * considera vencido: `nextReviewDate <= ahora`, o tarjetas completamente
- * nuevas (que nacen con `nextReviewDate` = su fecha de creación, ver
- * `createInitialSrsState()`). El resto del mazo existe, pero no aparece en
- * esta sesión hasta que le toque.
+ * Estudia desde `deck.cards` (pregunta / pista / respuesta + imágenes).
  */
 export default function StudyView({
   deck,
   onExit,
   onAddCard,
-  onUpdateCard: _onUpdateCard,
+  onUpdateCard,
   onResetDeckSrs,
 }: StudyViewProps) {
   const { dict, t } = useLanguage();
@@ -90,21 +56,15 @@ export default function StudyView({
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
 
-  const vaultFlashcards = useFlashcardStore((state) => state.flashcards);
-  const updateCard = useFlashcardStore((state) => state.updateCard);
   const addVaultCard = useFlashcardStore((state) => state.addCard);
 
-  // Filtro cognitivo: solo tarjetas del mazo activo con `nextReview` <= ahora.
-  const allCards = vaultFlashcards.filter((card) => card.deckId === deck?.id);
-  const cards = allCards.filter((card) => isFlashcardDue(card.nextReview));
-  const currentVaultCard = cards[currentIndex];
-  const currentCard = currentVaultCard
-    ? toStudyCardData(currentVaultCard)
-    : undefined;
+  const allCards = deck?.cards ?? [];
+  const cards = useMemo(
+    () => allCards.filter((card) => isCardDue(card.nextReviewDate)),
+    [allCards],
+  );
+  const currentCard = cards[currentIndex];
 
-  // Cambiar de mazo (o que el mazo actual pierda/gane tarjetas por fuera de
-  // esta vista) reinicia el puntero — nunca queremos apuntar a un índice que
-  // ya no existe, ni arrastrar el giro de la tarjeta anterior a la nueva.
   useEffect(() => {
     setCurrentIndex(0);
     setIsFlipped(false);
@@ -116,30 +76,24 @@ export default function StudyView({
 
   const handleFlip = () => setIsFlipped((current) => !current);
 
-  /**
-   * Veredicto SRS: `calculateNextReview` → `updateCard` (bóveda) →
-   * avanza índice → vuelve la tarjeta al frente.
-   */
   const handleRate = (grade: ReviewGrade) => {
-    if (!deck || !currentVaultCard) return;
+    if (!deck || !currentCard) return;
 
     const {
       newInterval,
       newEaseFactor,
-      newRepetitions,
       nextReviewDate,
     } = calculateNextReview({
-      interval: currentVaultCard.interval,
-      easeFactor: currentVaultCard.easeFactor,
-      repetitions: currentVaultCard.repetitions,
+      interval: currentCard.interval,
+      easeFactor: currentCard.easeFactor,
+      repetitions: 0,
       grade,
     });
 
-    updateCard(currentVaultCard.id, {
+    onUpdateCard(deck.id, currentCard.id, {
       interval: newInterval,
       easeFactor: newEaseFactor,
-      repetitions: newRepetitions,
-      nextReview: nextReviewDate,
+      nextReviewDate,
     });
     recordRatingStat(deck.id, GRADE_TO_RATING_KIND[grade]);
 
@@ -151,15 +105,12 @@ export default function StudyView({
     draft: Omit<StudyCardData, "id" | "interval" | "easeFactor" | "nextReviewDate">,
   ) => {
     if (!deck) return;
-    // Tarjeta "completamente nueva" (Misión 3): nace con `nextReviewDate` =
-    // ahora, así entra directo en la cola de estudio activa sin esperar.
     const newCard: StudyCardData = {
       id: createCardId(),
       ...createInitialSrsState(),
       ...draft,
     };
     onAddCard(deck.id, newCard);
-    // Misma tarjeta en la bóveda Zustand/FS (cola que alimenta el Filtro Cognitivo).
     addVaultCard(
       draft.front,
       draft.back,
@@ -193,8 +144,6 @@ export default function StudyView({
         )}
       </div>
 
-      {/* -translate-y-6: centro óptico, no matemático — el bloque
-          tarjeta+comando+progreso lee más "pesado" abajo. */}
       <div className="flex flex-1 -translate-y-6 flex-col items-center justify-center gap-6">
         {deck && (
           <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
@@ -202,18 +151,19 @@ export default function StudyView({
           </p>
         )}
 
-        {currentCard && currentVaultCard ? (
-          <StudyCard key={currentVaultCard.id} card={currentCard} isFlipped={isFlipped} onFlip={handleFlip} />
+        {currentCard ? (
+          <StudyCard
+            key={currentCard.id}
+            card={currentCard}
+            isFlipped={isFlipped}
+            onFlip={handleFlip}
+          />
         ) : deck && allCards.length === 0 ? (
           <EmptyDeckState onAddCard={() => setIsModalOpen(true)} />
         ) : deck ? (
-          // Misión 3: el mazo SÍ tiene tarjetas, pero ninguna está vencida
-          // hoy — un estado distinto de "mazo vacío", con su propio copy.
           <AllCaughtUpState />
         ) : null}
 
-        {/* Misión 4, condición estricta: este bloque entero solo existe en
-            el DOM cuando `isFlipped` es verdadero — no es un `hidden`/opacidad. */}
         {currentCard && isFlipped && <TacticalCommandCenter onRate={handleRate} />}
 
         {deck && cards.length > 0 && (
@@ -353,7 +303,7 @@ function EmptyDeckState({ onAddCard }: { onAddCard: () => void }) {
   );
 }
 
-/** "La Forja": modal de creación de tarjetas, mismo lenguaje visual "Premium Dark" del resto de la app. */
+/** "La Forja": modal de creación — una imagen independiente por campo. */
 type AddCardModalProps = {
   isOpen: boolean;
   onClose: () => void;
@@ -367,18 +317,20 @@ function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
   const [front, setFront] = useState("");
   const [hint, setHint] = useState("");
   const [back, setBack] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageQuestion, setImageQuestion] = useState<File | null>(null);
+  const [imageHint, setImageHint] = useState<File | null>(null);
+  const [imageAnswer, setImageAnswer] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
       setFront("");
       setHint("");
       setBack("");
-      setImageFile(null);
+      setImageQuestion(null);
+      setImageHint(null);
+      setImageAnswer(null);
       setIsSaving(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   }, [isOpen]);
 
@@ -407,10 +359,20 @@ function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
 
     setIsSaving(true);
     try {
-      // La imagen se sube a IndexedDB recién al confirmar — así un modal
-      // cerrado/cancelado nunca deja blobs huérfanos en el almacén.
-      const imageId = imageFile ? await saveImage(imageFile) : undefined;
-      onSave({ front: front.trim(), hint: hint.trim(), back: back.trim(), imageId });
+      // Blobs a IndexedDB solo al confirmar — cancelar no deja huérfanos.
+      const [imageQuestionId, imageHintId, imageAnswerId] = await Promise.all([
+        imageQuestion ? saveImage(imageQuestion) : Promise.resolve(undefined),
+        imageHint ? saveImage(imageHint) : Promise.resolve(undefined),
+        imageAnswer ? saveImage(imageAnswer) : Promise.resolve(undefined),
+      ]);
+      onSave({
+        front: front.trim(),
+        hint: hint.trim(),
+        back: back.trim(),
+        ...(imageQuestionId ? { imageQuestion: imageQuestionId } : {}),
+        ...(imageHintId ? { imageHint: imageHintId } : {}),
+        ...(imageAnswerId ? { imageAnswer: imageAnswerId } : {}),
+      });
     } finally {
       setIsSaving(false);
     }
@@ -418,7 +380,7 @@ function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -426,7 +388,7 @@ function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
         aria-modal="true"
         aria-labelledby="add-card-modal-title"
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-lg rounded-lg border border-card-rest bg-card p-6 shadow-glow-card"
+        className="ui-floating ui-scrollbar max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-xl p-6"
       >
         <div className="flex items-center justify-between">
           <h2
@@ -445,99 +407,51 @@ function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
           </button>
         </div>
 
-        <div className="mt-6">
-          <label
-            htmlFor="add-card-question"
-            className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
-          >
-            {dict.addCardModal.questionLabel}
-          </label>
-          <textarea
-            id="add-card-question"
-            autoFocus
-            rows={2}
-            value={front}
-            onChange={(event) => setFront(event.target.value)}
-            placeholder={dict.addCardModal.questionPlaceholder}
-            className="mt-2 w-full resize-none rounded-lg border border-card-rest bg-background/60 px-3 py-2.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:shadow-glow-sm"
-          />
-        </div>
+        <ModalTextField
+          id="add-card-question"
+          label={dict.addCardModal.questionLabel}
+          placeholder={dict.addCardModal.questionPlaceholder}
+          value={front}
+          onChange={setFront}
+          autoFocus
+          imageFile={imageQuestion}
+          onImageChange={setImageQuestion}
+          className="mt-6"
+        />
 
-        <div className="mt-5">
-          <label
-            htmlFor="add-card-image"
-            className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
-          >
-            {dict.addCardModal.imageLabel}
-          </label>
-          <div className="mt-2 flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="premium-btn flex items-center gap-2 rounded-lg border border-card-rest px-3 py-2 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
-            >
-              <ImagePlus className="h-4 w-4" strokeWidth={2} />
-              {dict.addCardModal.imageLabel}
-            </button>
-            <span className="min-w-0 truncate text-sm text-muted-foreground">
-              {imageFile ? imageFile.name : dict.addCardModal.noImageLabel}
-            </span>
-          </div>
-          <input
-            id="add-card-image"
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
-            className="sr-only"
-          />
-        </div>
+        <ModalTextField
+          id="add-card-hint"
+          label={dict.addCardModal.hintLabel}
+          placeholder={dict.addCardModal.hintPlaceholder}
+          value={hint}
+          onChange={setHint}
+          imageFile={imageHint}
+          onImageChange={setImageHint}
+          className="mt-5"
+        />
 
-        <div className="mt-5">
-          <label
-            htmlFor="add-card-hint"
-            className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
-          >
-            {dict.addCardModal.hintLabel}
-          </label>
-          <textarea
-            id="add-card-hint"
-            rows={2}
-            value={hint}
-            onChange={(event) => setHint(event.target.value)}
-            placeholder={dict.addCardModal.hintPlaceholder}
-            className="mt-2 w-full resize-none rounded-lg border border-card-rest bg-background/60 px-3 py-2.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:shadow-glow-sm"
-          />
-        </div>
-
-        <div className="mt-5">
-          <label
-            htmlFor="add-card-answer"
-            className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
-          >
-            {dict.addCardModal.answerLabel}
-          </label>
-          <textarea
-            id="add-card-answer"
-            rows={2}
-            value={back}
-            onChange={(event) => setBack(event.target.value)}
-            placeholder={dict.addCardModal.answerPlaceholder}
-            className="mt-2 w-full resize-none rounded-lg border border-card-rest bg-background/60 px-3 py-2.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:shadow-glow-sm"
-          />
-        </div>
+        <ModalTextField
+          id="add-card-answer"
+          label={dict.addCardModal.answerLabel}
+          placeholder={dict.addCardModal.answerPlaceholder}
+          value={back}
+          onChange={setBack}
+          imageFile={imageAnswer}
+          onImageChange={setImageAnswer}
+          className="mt-5"
+        />
 
         <div className="mt-6 flex items-center justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors duration-300 hover:text-foreground"
+            className="rounded-lg border border-card-rest px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors duration-300 hover:border-primary/40 hover:text-foreground"
           >
             {dict.addCardModal.cancelLabel}
           </button>
           <button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => void handleSubmit()}
             disabled={!canSave}
             className="premium-btn rounded-lg border border-primary/60 bg-primary px-4 py-2 text-sm font-medium tracking-wide text-primary-foreground transition-all duration-300 hover:border-primary hover:shadow-glow-card disabled:pointer-events-none disabled:opacity-40"
           >
@@ -545,6 +459,125 @@ function AddCardModal({ isOpen, onClose, onSave }: AddCardModalProps) {
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+type ModalTextFieldProps = {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
+  onChange: (value: string) => void;
+  imageFile: File | null;
+  onImageChange: (file: File | null) => void;
+  autoFocus?: boolean;
+  className?: string;
+};
+
+function ModalTextField({
+  id,
+  label,
+  placeholder,
+  value,
+  onChange,
+  imageFile,
+  onImageChange,
+  autoFocus,
+  className = "",
+}: ModalTextFieldProps) {
+  const { dict } = useLanguage();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setPreviewUrl(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setPreviewUrl(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  return (
+    <div className={className}>
+      <div className="flex items-center justify-between gap-2">
+        <label
+          htmlFor={id}
+          className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
+        >
+          {label}
+        </label>
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          aria-label={dict.addCardModal.attachImageLabel}
+          title={dict.addCardModal.attachImageLabel}
+          className="premium-btn inline-flex items-center gap-1.5 rounded-md border border-card-rest px-2 py-1 text-[11px] font-medium tracking-wide text-secondary-foreground uppercase transition-all duration-300 hover:border-primary/50 hover:text-primary"
+        >
+          <ImagePlus className="h-3.5 w-3.5" strokeWidth={2} />
+          {dict.addCardModal.attachImageLabel}
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="sr-only"
+          onChange={(event) => {
+            onImageChange(event.target.files?.[0] ?? null);
+            event.target.value = "";
+          }}
+        />
+      </div>
+
+      <textarea
+        id={id}
+        autoFocus={autoFocus}
+        rows={2}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        onPaste={(event) => {
+          const item = Array.from(event.clipboardData?.items ?? []).find(
+            (entry) => entry.type.startsWith("image/"),
+          );
+          const file = item?.getAsFile();
+          if (file) {
+            event.preventDefault();
+            onImageChange(file);
+            return;
+          }
+          void handleImagePaste(event, (markdown) => {
+            const el = event.currentTarget;
+            const start = el.selectionStart ?? value.length;
+            const end = el.selectionEnd ?? value.length;
+            onChange(value.slice(0, start) + markdown + value.slice(end));
+          });
+        }}
+        placeholder={placeholder}
+        className="mt-2 w-full resize-none rounded-lg border border-card-rest bg-background/60 px-3 py-2.5 text-sm text-foreground outline-none transition-all duration-300 placeholder:text-muted-foreground focus:border-primary focus:shadow-glow-sm"
+      />
+
+      {previewUrl && (
+        <div className="mt-2 inline-flex items-start gap-2">
+          <div className="relative h-14 w-14 overflow-hidden rounded-lg border border-card-rest bg-background/40">
+            <img
+              src={previewUrl}
+              alt=""
+              className="h-full w-full object-cover"
+            />
+            <button
+              type="button"
+              onClick={() => onImageChange(null)}
+              aria-label={dict.addCardModal.removeImageLabel}
+              title={dict.addCardModal.removeImageLabel}
+              className="absolute top-0.5 right-0.5 flex h-5 w-5 items-center justify-center rounded-full border border-card-rest bg-card text-muted-foreground shadow-sm transition-colors hover:border-rose-400/50 hover:text-rose-500"
+            >
+              <X className="h-3 w-3" strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

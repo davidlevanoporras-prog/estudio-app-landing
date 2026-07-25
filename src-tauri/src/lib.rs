@@ -14,6 +14,9 @@ pub fn run() {
     // Ver `capabilities/default.json` — sin este `.plugin(...)`, APIs como
     // `readTextFile` / `writeTextFile` / `exists` fallan en runtime.
     .plugin(tauri_plugin_fs::init())
+    // Abre URLs en el navegador del SO (checkout Pro, etc.) —
+    // ver `src/lib/openExternal.ts`.
+    .plugin(tauri_plugin_opener::init())
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

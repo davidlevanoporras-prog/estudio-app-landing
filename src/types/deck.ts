@@ -4,8 +4,17 @@ export type StudyCardData = {
   front: string;
   hint: string;
   back: string;
-  /** Referencia a un blob guardado en IndexedDB (ver `src/utils/mediaStore.ts`) — nunca Base64. */
+  /**
+   * @deprecated Usar `imageQuestion`. Se conserva solo para mazos legacy;
+   * `normalizeCard` / `resolveQuestionImage` lo migran en lectura.
+   */
   imageId?: string;
+  /** Imagen adjunta al campo Pregunta (IndexedDB — ver `mediaStore`). */
+  imageQuestion?: string;
+  /** Imagen adjunta al campo Pista. */
+  imageHint?: string;
+  /** Imagen adjunta al campo Respuesta. */
+  imageAnswer?: string;
   /** Etiqueta corta de materia/tema (ej. "Anatomía") — se muestra en la Tarjeta Monolítica 3D. */
   tag?: string;
   /**
@@ -31,3 +40,18 @@ export type Deck = {
   name: string;
   cards: StudyCardData[];
 };
+
+/** Imagen de pregunta: campo nuevo o legado `imageId`. */
+export function resolveQuestionImage(card: StudyCardData): string | undefined {
+  return card.imageQuestion ?? card.imageId;
+}
+
+/** Todos los IDs de blob asociados a una tarjeta (para limpieza IndexedDB). */
+export function collectCardImageIds(card: StudyCardData): string[] {
+  const ids = [
+    resolveQuestionImage(card),
+    card.imageHint,
+    card.imageAnswer,
+  ].filter((id): id is string => typeof id === "string" && id.length > 0);
+  return [...new Set(ids)];
+}

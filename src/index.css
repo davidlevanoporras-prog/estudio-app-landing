@@ -236,6 +236,116 @@
   transform: rotateY(180deg);
 }
 
+/* Flashcard — mismos colores frente/reverso; sombra según data-mode */
+.flashcard-face {
+  box-shadow: 0 18px 48px -22px rgb(0 0 0 / 0.18);
+}
+
+[data-mode="dark"] .flashcard-face {
+  box-shadow: 0 30px 70px -20px rgb(0 0 0 / 0.65);
+}
+
+/* Imágenes inline en flashcards (pregunta / pista / respuesta) */
+.flashcard-media,
+.rich-text img {
+  display: block;
+  max-width: 100%;
+  max-height: 250px;
+  object-fit: contain;
+  border-radius: 8px;
+  margin: 0 auto;
+}
+
+/* Scrollbar premium — Showroom (thin, track transparente, thumb temático) */
+.ui-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent)
+    transparent;
+}
+
+.ui-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.ui-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ui-scrollbar::-webkit-scrollbar-thumb {
+  background-color: color-mix(
+    in srgb,
+    var(--muted-foreground) 38%,
+    transparent
+  );
+  border-radius: 999px;
+}
+
+.ui-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in srgb, var(--primary) 55%, transparent);
+}
+
+/* Tooltip informativo — contraste invertido al modo activo */
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 4px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in-up 180ms ease-out forwards;
+}
+
+/* ── Superficies flotantes globales (menus / popovers / modales) ──
+   Portales en `document.body` heredan tokens vía variables CSS del <html>
+   (`data-mode` + `data-theme`), sin hardcodear negro. */
+.ui-floating {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border: 1px solid var(--card-border-rest);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.04) inset,
+    0 18px 40px -18px rgb(0 0 0 / 0.28);
+}
+
+[data-mode="dark"] .ui-floating {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.06) inset,
+    0 24px 56px -16px rgb(0 0 0 / 0.65);
+}
+
+.ui-floating-item {
+  color: var(--secondary-foreground);
+}
+
+.ui-floating-item:hover {
+  background-color: var(--primary-soft);
+  color: var(--primary);
+}
+
+.ui-floating-item-danger {
+  color: #9f1239;
+}
+
+.ui-floating-item-danger:hover {
+  background-color: rgb(159 18 57 / 0.1);
+  color: #881337;
+}
+
+[data-mode="dark"] .ui-floating-item-danger {
+  color: rgb(251 113 133 / 0.9);
+}
+
+[data-mode="dark"] .ui-floating-item-danger:hover {
+  background-color: rgb(244 63 94 / 0.12);
+  color: rgb(254 205 211);
+}
+
 /* Entrada del Centro de Mando Táctico: solo existe en el DOM tras el giro
    (condición estricta de la Misión 4, ver `StudyView.tsx`), así que un
    montaje "seco" se sentiría abrupto — este pequeño keyframe le da una

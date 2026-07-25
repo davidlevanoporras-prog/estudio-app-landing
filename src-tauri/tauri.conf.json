@@ -2,7 +2,7 @@
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Excellence Absolue",
   "version": "1.0.0",
-  "identifier": "com.excellenceabsolue.app",
+  "identifier": "com.excellenceabsolue.desktop",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",

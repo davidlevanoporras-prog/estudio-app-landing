@@ -21,6 +21,7 @@ import {
 import type { Dictionary, Language } from "../i18n/dictionary";
 import { useLanguage } from "../i18n/LanguageContext";
 import { getSecureJSON, setSecureJSON } from "../lib/secureStorage";
+import { useConfirm } from "./ConfirmProvider";
 import { PortalMenu } from "./PortalMenu";
 
 /** Cadencia de recurrencia de un desafío — `"none"` es el valor por defecto (sin repetición). */
@@ -472,6 +473,7 @@ function formatDayLabel(
  */
 export default function ChallengesView() {
   const { dict, language, t } = useLanguage();
+  const confirm = useConfirm();
   const [challenges, setChallenges] = useState<Challenge[]>(loadStoredChallenges);
   const [draftTitle, setDraftTitle] = useState("");
   const [draftRecurrence, setDraftRecurrence] = useState<Recurrence>("none");
@@ -550,7 +552,9 @@ export default function ChallengesView() {
     );
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
+    const ok = await confirm();
+    if (!ok) return;
     setChallenges((current) => current.filter((challenge) => challenge.id !== id));
     setOpenMenuId((current) => (current === id ? null : current));
     setEditingId((current) => (current === id ? null : current));
@@ -666,11 +670,10 @@ type DatePopoverProps = {
  * cadencias (Misión 2); a la derecha, un panel que MUTA según la cadencia
  * activa (Misión 3): botones de día de semana, cuadrícula de días del mes,
  * un calendario clásico de fecha única, o un simple mensaje para "Diaria".
- * El panel derecho es deliberadamente un "zócalo oscuro" (`bg-gray-900`)
- * fijo — no se tiñe con el tema activo — para separar visualmente "la
- * regla que se está editando" del resto de la UI temática; lo seleccionado
- * dentro de él SÍ se ilumina con el color global de la app (`bg-primary`/
- * `text-primary`, que resuelven a `var(--color-primary)`).
+ * El panel derecho usa un inset sutil del tema (`bg-background/70`) para
+ * separar visualmente "la regla que se está editando" del resto del
+ * popover temático; lo seleccionado se ilumina con `bg-primary` /
+ * `text-primary`.
  */
 function DatePopover({
   recurrence,
@@ -735,7 +738,7 @@ function DatePopover({
         <div
           role="dialog"
           aria-label={texts.trigger}
-          className="absolute right-0 top-full z-10 mt-2 flex overflow-hidden rounded-lg border border-wenge-border-subtle bg-cuervo shadow-glow-card"
+          className="ui-floating absolute right-0 top-full z-10 mt-2 flex overflow-hidden rounded-lg"
         >
           {/* Columna izquierda (Misión 2): lista estricta, siempre la misma sin importar el modo activo. */}
           <div className="flex w-32 shrink-0 flex-col gap-0.5 p-2">
@@ -760,8 +763,8 @@ function DatePopover({
             })}
           </div>
 
-          {/* Columna derecha (Misión 3): "el panel mutante" — fondo oscuro fijo, sin inputs nativos. */}
-          <div className="w-60 shrink-0 border-l border-white/5 bg-gray-900 p-3">
+          {/* Columna derecha (Misión 3): "el panel mutante" — inset temático. */}
+          <div className="w-60 shrink-0 border-l border-card-rest bg-background/70 p-3">
             <MutantPanel
               recurrence={recurrence}
               exactDate={exactDate}
@@ -1275,13 +1278,13 @@ function TaskMenu({ isOpen, onToggle, onClose, onEdit, onDelete }: TaskMenuProps
         open={isOpen}
         anchorRef={buttonRef}
         onClose={onClose}
-        className="w-40 rounded-lg border border-wenge-border-subtle bg-cuervo p-1.5 shadow-glow-card"
+        className="w-40"
       >
         <button
           type="button"
           role="menuitem"
           onClick={onEdit}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-secondary-foreground transition-colors duration-200 hover:bg-primary-soft hover:text-primary"
+          className="ui-floating-item flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.challenges.editAction}
@@ -1291,7 +1294,7 @@ function TaskMenu({ isOpen, onToggle, onClose, onEdit, onDelete }: TaskMenuProps
           type="button"
           role="menuitem"
           onClick={onDelete}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+          className="ui-floating-item-danger flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.challenges.deleteAction}

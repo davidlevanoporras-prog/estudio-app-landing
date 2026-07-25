@@ -8,9 +8,13 @@ import {
 } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useSimulatorStore } from "../store/simulatorStore";
+import {
+  clozeAnswersFromCard,
+  clozeSegmentsFromCard,
+} from "../utils/parseClozeSyntax";
 import SimulatorManager from "./SimulatorManager";
 
-type FeedbackState = "idle" | "correct" | "incorrect";
+type FeedbackState = "idle" | "correct" | "incorrect" | "partial";
 
 function shuffleOptions(options: string[]): string[] {
   const copy = [...options];
@@ -21,6 +25,17 @@ function shuffleOptions(options: string[]): string[] {
     copy[j] = tmp;
   }
   return copy;
+}
+
+function uniquePreserveOrder(values: string[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const value of values) {
+    if (seen.has(value)) continue;
+    seen.add(value);
+    result.push(value);
+  }
+  return result;
 }
 
 /**
@@ -38,16 +53,35 @@ export default function SimulatorView() {
 
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [feedbackState, setFeedbackState] = useState<FeedbackState>("idle");
+  /** Índices de hueco ya rellenados correctamente (multi-[[ ]]). */
+  const [filledBlankIndexes, setFilledBlankIndexes] = useState<number[]>([]);
   const advanceTimerRef = useRef<number | null>(null);
 
   const cards = currentSession?.cards ?? [];
   const currentCard = cards[currentIndex];
   const queueLength = cards.length;
 
+  const segments = useMemo(
+    () => (currentCard ? clozeSegmentsFromCard(currentCard) : []),
+    [currentCard],
+  );
+  const answers = useMemo(
+    () => (currentCard ? clozeAnswersFromCard(currentCard) : []),
+    [currentCard],
+  );
+
   const shuffledOptions = useMemo(() => {
     if (!currentCard) return [];
-    return shuffleOptions([currentCard.answer, ...currentCard.distractors]);
-  }, [currentIndex, currentCard]);
+    return shuffleOptions(
+      uniquePreserveOrder([...answers, ...currentCard.distractors]),
+    );
+  }, [currentIndex, currentCard, answers]);
+
+  useEffect(() => {
+    setSelectedOption(null);
+    setFeedbackState("idle");
+    setFilledBlankIndexes([]);
+  }, [currentIndex, currentCard?.id]);
 
   useEffect(() => {
     return () => {
@@ -72,21 +106,52 @@ export default function SimulatorView() {
   const handleCheck = () => {
     if (!currentCard || !selectedOption || feedbackState !== "idle") return;
 
-    const isCorrect = selectedOption === currentCard.answer;
-    setFeedbackState(isCorrect ? "correct" : "incorrect");
+    const matchIndex = answers.findIndex(
+      (answer, index) =>
+        !filledBlankIndexes.includes(index) && answer === selectedOption,
+    );
 
+    if (matchIndex === -1) {
+      setFeedbackState("incorrect");
+      advanceTimerRef.current = window.setTimeout(() => {
+        nextCard(false);
+        setSelectedOption(null);
+        setFeedbackState("idle");
+        setFilledBlankIndexes([]);
+        advanceTimerRef.current = null;
+      }, 1500);
+      return;
+    }
+
+    const nextFilled = [...filledBlankIndexes, matchIndex];
+    setFilledBlankIndexes(nextFilled);
+
+    if (nextFilled.length >= answers.length) {
+      setFeedbackState("correct");
+      advanceTimerRef.current = window.setTimeout(() => {
+        nextCard(true);
+        setSelectedOption(null);
+        setFeedbackState("idle");
+        setFilledBlankIndexes([]);
+        advanceTimerRef.current = null;
+      }, 1500);
+      return;
+    }
+
+    // Acierto parcial: queda al menos un hueco por rellenar.
+    setFeedbackState("partial");
     advanceTimerRef.current = window.setTimeout(() => {
-      nextCard(isCorrect);
       setSelectedOption(null);
       setFeedbackState("idle");
       advanceTimerRef.current = null;
-    }, 1500);
+    }, 700);
   };
 
   const handleExitToLibrary = () => {
     clearAdvanceTimer();
     setSelectedOption(null);
     setFeedbackState("idle");
+    setFilledBlankIndexes([]);
     endSession();
   };
 
@@ -123,7 +188,7 @@ export default function SimulatorView() {
           score={score}
           attempts={attempts}
         />
-        <section className="glow-card relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden border-white/10 bg-[#0B0D0F]/70 p-10 text-center shadow-glow-card backdrop-blur-xl">
+        <section className="glow-card relative flex flex-1 flex-col items-center justify-center gap-6 overflow-hidden border-card-rest bg-card/90 p-10 text-center shadow-glow-card backdrop-blur-xl">
           <div
             aria-hidden="true"
             className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_70%_55%_at_50%_0%,rgba(212,165,116,0.16),transparent_60%)]"
@@ -170,6 +235,10 @@ export default function SimulatorView() {
     );
   }
 
+  const filledAnswerByIndex = new Map(
+    filledBlankIndexes.map((index) => [index, answers[index]]),
+  );
+
   return (
     <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-8">
       <SessionHeader
@@ -181,80 +250,113 @@ export default function SimulatorView() {
         onBack={handleExitToLibrary}
       />
 
-      <section className="glow-card relative flex flex-1 flex-col justify-between overflow-hidden border-white/10 bg-[#0B0D0F]/70 p-8 shadow-glow-card backdrop-blur-xl md:p-10">
+      <section className="glow-card relative flex max-h-[min(720px,85vh)] flex-1 flex-col overflow-hidden border-card-rest bg-card/90 p-8 shadow-glow-card backdrop-blur-xl md:p-10">
         <div
           aria-hidden="true"
           className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-20%,rgba(212,165,116,0.12),transparent_55%)]"
         />
 
-        <div className="relative z-10 flex flex-1 flex-col items-center justify-center gap-10">
-          <p
-            className="max-w-xl text-center text-2xl leading-relaxed text-neutral-100 md:text-3xl"
-            style={{ fontFamily: "'Playfair Display', serif" }}
-          >
-            {currentCard.textBefore}{" "}
-            <span
-              className={[
-                "mx-1 inline-flex min-w-[7.5rem] items-center justify-center rounded-lg border px-3 py-1 align-baseline text-xl font-medium tracking-wide transition-all duration-300 md:min-w-[9rem] md:text-2xl",
-                feedbackState === "correct"
-                  ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300 shadow-[0_0_20px_rgba(52,211,153,0.3)]"
-                  : feedbackState === "incorrect"
-                    ? "border-rose-400/60 bg-rose-500/15 text-rose-300 shadow-[0_0_20px_rgba(251,113,133,0.3)]"
-                    : selectedOption
-                      ? "border-primary/50 bg-primary-soft text-primary shadow-[0_0_20px_rgba(212,165,116,0.25)]"
-                      : "border-dashed border-white/25 bg-white/5 text-neutral-500",
-              ].join(" ")}
+        <div className="relative z-10 flex min-h-0 flex-1 flex-col items-center justify-center gap-8">
+          <div className="ui-scrollbar max-h-[60vh] w-full max-w-2xl overflow-y-auto px-1">
+            <p
+              className="text-center text-2xl leading-relaxed text-foreground md:text-3xl"
+              style={{ fontFamily: "'Playfair Display', serif" }}
             >
-              {selectedOption ?? "_____"}
-            </span>{" "}
-            {currentCard.textAfter}
-          </p>
-
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            {shuffledOptions.map((option) => {
-              const isActive = selectedOption === option;
-              const isAnswer = option === currentCard.answer;
-              let tone =
-                "border-white/10 bg-white/5 text-neutral-200 hover:border-primary/40 hover:bg-white/10 hover:text-foreground hover:shadow-[0_0_14px_rgba(212,165,116,0.18)]";
-
-              if (feedbackState === "correct" && isActive) {
-                tone =
-                  "border-emerald-400/70 bg-emerald-500/20 text-emerald-200 shadow-[0_0_18px_rgba(52,211,153,0.4)]";
-              } else if (feedbackState === "incorrect") {
-                if (isActive) {
-                  tone =
-                    "border-rose-400/70 bg-rose-500/20 text-rose-200 shadow-[0_0_18px_rgba(251,113,133,0.4)]";
-                } else if (isAnswer) {
-                  tone =
-                    "border-emerald-400/50 bg-emerald-500/10 text-emerald-300";
-                } else {
-                  tone = "border-white/5 bg-white/[0.03] text-neutral-500";
+              {segments.map((segment, segmentIndex) => {
+                if (segment.kind === "text") {
+                  return (
+                    <span key={`seg-t-${segmentIndex}`}>{segment.value}</span>
+                  );
                 }
-              } else if (isActive) {
-                tone =
-                  "border-primary/70 bg-primary/15 text-primary shadow-[0_0_18px_rgba(212,165,116,0.35)]";
-              }
 
-              return (
-                <button
-                  key={`${currentIndex}-${option}`}
-                  type="button"
-                  onClick={() => handleSelect(option)}
-                  disabled={feedbackState !== "idle"}
-                  aria-pressed={isActive}
-                  className={[
-                    "rounded-full border px-5 py-2.5 text-sm font-medium tracking-wide transition-all duration-300 disabled:cursor-default",
-                    tone,
-                  ].join(" ")}
-                >
-                  {option}
-                </button>
-              );
-            })}
+                const filledValue = filledAnswerByIndex.get(segment.index);
+                const isFilled = filledValue != null;
+                // Un solo hueco: mostrar la opción elegida en el blank (UX clásica).
+                const showSelected =
+                  answers.length === 1 &&
+                  !isFilled &&
+                  selectedOption != null;
+
+                return (
+                  <span
+                    key={`seg-b-${segment.index}`}
+                    className={[
+                      "mx-1 inline-flex max-w-full min-w-[7.5rem] items-center justify-center rounded-lg border px-3 py-1 align-baseline text-xl font-medium tracking-wide break-words transition-all duration-300 md:min-w-[9rem] md:text-2xl",
+                      feedbackState === "correct"
+                        ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-600"
+                        : feedbackState === "incorrect"
+                          ? "border-rose-400/60 bg-rose-500/15 text-rose-600"
+                          : isFilled || showSelected
+                            ? "border-primary/40 bg-primary-soft text-primary"
+                            : "border-dashed border-card-rest bg-background/50 text-muted-foreground",
+                    ].join(" ")}
+                  >
+                    {filledValue ?? (showSelected ? selectedOption : "_____")}
+                  </span>
+                );
+              })}
+            </p>
+          </div>
+
+          <div className="ui-scrollbar max-h-[28vh] w-full overflow-y-auto">
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {shuffledOptions.map((option) => {
+                const isActive = selectedOption === option;
+                const isAnswer = answers.includes(option);
+                const alreadyUsed =
+                  isAnswer &&
+                  filledBlankIndexes.some(
+                    (index) => answers[index] === option,
+                  );
+
+                let tone =
+                  "border-card-rest bg-background/50 text-secondary-foreground hover:border-primary/40 hover:bg-primary-soft hover:text-foreground";
+
+                if (feedbackState === "correct" && isActive) {
+                  tone =
+                    "border-emerald-400/70 bg-emerald-500/20 text-emerald-700";
+                } else if (feedbackState === "incorrect") {
+                  if (isActive) {
+                    tone = "border-rose-400/70 bg-rose-500/20 text-rose-700";
+                  } else if (isAnswer && !alreadyUsed) {
+                    tone =
+                      "border-emerald-400/50 bg-emerald-500/10 text-emerald-700";
+                  } else {
+                    tone =
+                      "border-card-rest bg-background/30 text-muted-foreground";
+                  }
+                } else if (feedbackState === "partial" && isActive) {
+                  tone =
+                    "border-emerald-400/60 bg-emerald-500/15 text-emerald-700";
+                } else if (alreadyUsed) {
+                  tone =
+                    "border-card-rest bg-background/30 text-muted-foreground opacity-50";
+                } else if (isActive) {
+                  tone =
+                    "border-primary/70 bg-primary/15 text-primary shadow-glow-sm";
+                }
+
+                return (
+                  <button
+                    key={`${currentIndex}-${option}`}
+                    type="button"
+                    onClick={() => handleSelect(option)}
+                    disabled={feedbackState !== "idle" || alreadyUsed}
+                    aria-pressed={isActive}
+                    className={[
+                      "rounded-full border px-5 py-2.5 text-sm font-medium tracking-wide break-words transition-all duration-300 disabled:cursor-default",
+                      tone,
+                    ].join(" ")}
+                  >
+                    {option}
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="relative z-10 mt-10 flex justify-center border-t border-white/5 pt-8">
+        <div className="relative z-10 mt-8 flex shrink-0 justify-center border-t border-card-rest pt-6">
           <button
             type="button"
             disabled={!selectedOption || feedbackState !== "idle"}
@@ -320,7 +422,9 @@ function SessionHeader({
         ) : null}
         <p className="mt-0.5 tabular-nums text-primary">
           {t(dict.simulator.scoreLabel, { score })}
-          {attempts > 0 ? t(dict.simulator.attemptsSuffix, { count: attempts }) : ""}
+          {attempts > 0
+            ? t(dict.simulator.attemptsSuffix, { count: attempts })
+            : ""}
         </p>
       </div>
     </header>

@@ -17,8 +17,8 @@ const MODE_ICONS: Record<ThemeMode, LucideIcon> = {
 };
 
 /**
- * Control Claro / Oscuro / Auto — Silent Luxury.
- * Solo afecta a "Interfaz Clásica"; los entornos fotográficos lo ignoran.
+ * Segmented control premium — Claro / Oscuro / Sistema.
+ * Inactivo: transparente. Activo: píldora sólida contrastante + icono.
  */
 export default function ModeSegmentedControl({
   mode,
@@ -27,35 +27,14 @@ export default function ModeSegmentedControl({
   groupLabel,
   labels,
 }: ModeSegmentedControlProps) {
-  const activeIndex = themeModeOptions.indexOf(mode);
   const isDark = resolvedMode === "dark";
 
   return (
     <div
       role="radiogroup"
       aria-label={groupLabel}
-      className={[
-        "relative inline-flex items-center rounded-full p-1 transition-colors duration-300",
-        isDark
-          ? "bg-zinc-900/50 ring-1 ring-white/5"
-          : "bg-gray-100 ring-1 ring-black/5",
-      ].join(" ")}
+      className="inline-flex items-center gap-1 rounded-full p-1"
     >
-      <span
-        aria-hidden="true"
-        className={[
-          "absolute inset-y-1 rounded-full transition-transform duration-300 ease-out",
-          isDark
-            ? "bg-zinc-700 shadow-[0_1px_4px_rgba(0,0,0,0.45)]"
-            : "bg-white shadow-[0_1px_4px_rgba(0,0,0,0.08)]",
-        ].join(" ")}
-        style={{
-          left: "0.25rem",
-          width: `calc((100% - 0.5rem) / ${themeModeOptions.length})`,
-          transform: `translateX(${activeIndex * 100}%)`,
-        }}
-      />
-
       {themeModeOptions.map((option) => {
         const Icon = MODE_ICONS[option];
         const isActive = option === mode;
@@ -68,18 +47,25 @@ export default function ModeSegmentedControl({
             aria-checked={isActive}
             onClick={() => onChange(option)}
             className={[
-              "relative z-10 flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-xs font-medium tracking-wide transition-colors duration-300",
+              "inline-flex items-center justify-center gap-1.5 rounded-full px-3.5 py-2 text-xs tracking-wide",
+              "transition-all duration-300 ease-in-out active:scale-95",
               isActive
-                ? isDark
-                  ? "text-zinc-50"
-                  : "text-zinc-900"
-                : isDark
-                  ? "text-zinc-500 hover:text-zinc-300"
-                  : "text-zinc-500 hover:text-zinc-700",
+                ? [
+                    "font-semibold shadow-sm",
+                    isDark
+                      ? "bg-gray-800 text-white"
+                      : "bg-white text-gray-900 shadow-[0_1px_3px_rgba(0,0,0,0.08)]",
+                  ].join(" ")
+                : [
+                    "bg-transparent font-medium",
+                    isDark
+                      ? "text-gray-400 hover:bg-white/5 hover:text-gray-200"
+                      : "text-gray-500 hover:bg-black/[0.04] hover:text-gray-700",
+                  ].join(" "),
             ].join(" ")}
           >
-            <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-            {labels[option]}
+            <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} aria-hidden />
+            <span>{labels[option]}</span>
           </button>
         );
       })}

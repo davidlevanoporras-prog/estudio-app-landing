@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { DEV_PRO_LICENSE_KEY, isDevProForced } from "../lib/devPro";
 import { saveIsPremium } from "../lib/license";
 import {
   getSecureItem,
@@ -34,9 +35,13 @@ interface UserStoreState {
   deactivatePro: () => void;
 }
 
+const bootAsPro = readPersistedPro() || isDevProForced();
+
 export const useUserStore = create<UserStoreState>((set) => ({
-  isPro: readPersistedPro(),
-  licenseKey: readPersistedLicense(),
+  isPro: bootAsPro,
+  licenseKey:
+    readPersistedLicense() ??
+    (isDevProForced() ? DEV_PRO_LICENSE_KEY : null),
 
   activatePro: async (key: string) => {
     const trimmed = key.trim();

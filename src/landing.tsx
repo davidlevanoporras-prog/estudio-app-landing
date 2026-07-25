@@ -1,8 +1,7 @@
 import { motion, type Variants } from "framer-motion";
 import { Brain } from "lucide-react";
 
-const MAC_DOWNLOAD_URL =
-  "https://github.com/davidlevanoporras-prog/estudio-app-landing/releases/download/v1.0.0/Excellence.Absolue_1.0.0_aarch64.dmg";
+const MAC_DOWNLOAD_URL = "/Excellence-Absolue.dmg";
 
 const WINDOWS_DOWNLOAD_URL =
   "https://github.com/davidlevanoporras-prog/estudio-app-landing/releases/download/v1.0.0/Excellence.Absolue_1.0.0_x64-setup.exe";
@@ -112,8 +111,7 @@ export default function Landing() {
         >
           <a
             href={MAC_DOWNLOAD_URL}
-            target="_blank"
-            rel="noopener noreferrer"
+            download
             className="inline-flex min-w-[220px] items-center justify-center gap-2.5 rounded-full border border-white/25 bg-gradient-to-b from-white/[0.12] to-white/[0.02] px-7 py-3.5 text-[11px] font-medium tracking-[0.18em] text-[#f2f0ec] uppercase backdrop-blur-xl transition-all duration-500 hover:border-white/45 hover:from-white/[0.18] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)]"
             style={{
               boxShadow:

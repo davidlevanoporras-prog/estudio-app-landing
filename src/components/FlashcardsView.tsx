@@ -45,10 +45,7 @@ export default function FlashcardsView({
   const [openMenuDeckId, setOpenMenuDeckId] = useState<string | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [pendingDelete, setPendingDelete] = useState<{
-    ids: string[];
-    message: string;
-  } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
 
   const handleCreateDeck = () => {
     const newDeckId = onCreateDeck();
@@ -75,22 +72,16 @@ export default function FlashcardsView({
 
   const handleDeleteSelected = () => {
     if (selectedIds.size === 0) return;
-    setPendingDelete({
-      ids: Array.from(selectedIds),
-      message: dict.flashcards.deleteSelectedConfirm,
-    });
+    setPendingDelete(Array.from(selectedIds));
   };
 
   const handleDeleteSingle = (deck: Deck) => {
-    setPendingDelete({
-      ids: [deck.id],
-      message: t(dict.flashcards.deleteDeckConfirm, { name: deck.name }),
-    });
+    setPendingDelete([deck.id]);
   };
 
   const confirmPendingDelete = () => {
     if (!pendingDelete) return;
-    onDeleteDecks(pendingDelete.ids);
+    onDeleteDecks(pendingDelete);
     setSelectedIds(new Set());
     setIsSelectionMode(false);
     setPendingDelete(null);
@@ -104,7 +95,7 @@ export default function FlashcardsView({
   return (
     <>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold tracking-tight text-neutral-100">
+        <h2 className="text-xl font-semibold tracking-tight text-foreground">
           {dict.flashcards.heading}
         </h2>
 
@@ -113,7 +104,7 @@ export default function FlashcardsView({
             <button
               type="button"
               onClick={handleDeleteSelected}
-              className="flex items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm font-medium text-rose-300/90 transition-colors duration-300 hover:border-rose-400/40 hover:text-rose-200"
+              className="flex items-center gap-2 rounded-lg border border-rose-400/30 px-3 py-2 text-sm font-medium text-rose-500 transition-colors duration-300 hover:border-rose-400/50 hover:text-rose-600"
             >
               <Trash2 className="h-4 w-4" strokeWidth={2} />
               {t(dict.flashcards.deleteSelectedButton, {
@@ -125,7 +116,7 @@ export default function FlashcardsView({
           <button
             type="button"
             onClick={handleToggleSelectionMode}
-            className="rounded-lg border border-white/10 bg-transparent px-4 py-2 text-sm font-medium text-neutral-300 transition-colors duration-300 hover:border-white/20 hover:text-neutral-100"
+            className="rounded-lg border border-card-rest bg-transparent px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors duration-300 hover:border-primary hover:text-foreground"
           >
             {selectionButtonLabel}
           </button>
@@ -133,7 +124,7 @@ export default function FlashcardsView({
           <button
             type="button"
             onClick={handleCreateDeck}
-            className="flex items-center gap-2 rounded-lg border border-white/10 bg-white/10 px-4 py-2 text-sm font-medium tracking-wide text-neutral-100 uppercase transition-colors duration-300 hover:bg-white/[0.14]"
+            className="flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2 text-sm font-medium tracking-wide text-foreground uppercase transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} />
             {dict.flashcards.createDeck}
@@ -142,17 +133,17 @@ export default function FlashcardsView({
       </div>
 
       {decks.length === 0 ? (
-        <div className="photo-glass-panel flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-white/10 bg-card/40 py-28 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-white/10 bg-white/[0.03] text-neutral-500">
+        <div className="photo-glass-panel flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-card-rest bg-card/40 py-28 text-center">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
             <FolderX className="h-6 w-6" strokeWidth={1.5} />
           </div>
-          <p className="max-w-sm text-sm leading-relaxed text-neutral-500">
+          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
             {dict.emptyStates.noDecks}
           </p>
           <button
             type="button"
             onClick={handleCreateDeck}
-            className="flex items-center gap-2 rounded-lg border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-medium tracking-wide text-neutral-100 uppercase transition-colors duration-300 hover:bg-white/[0.14]"
+            className="flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2.5 text-sm font-medium tracking-wide text-foreground uppercase transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
           >
             <Plus className="h-4 w-4" strokeWidth={2.5} />
             {dict.emptyStates.createFirstDeck}
@@ -188,10 +179,10 @@ export default function FlashcardsView({
 
       {pendingDelete && (
         <ConfirmDialog
-          title={dict.flashcards.deleteConfirmTitle}
-          message={pendingDelete.message}
-          confirmLabel={dict.flashcards.deleteAction}
-          cancelLabel={dict.flashcards.cancelLabel}
+          title={dict.common.confirmTitle}
+          message={dict.common.confirmPermanentMessage}
+          confirmLabel={dict.common.deleteAction}
+          cancelLabel={dict.common.cancelLabel}
           destructive
           onConfirm={confirmPendingDelete}
           onCancel={() => setPendingDelete(null)}
@@ -268,8 +259,8 @@ function DeckCard({
           className={[
             "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border transition-colors duration-300",
             isSelected
-              ? "border-white/30 bg-white/10 text-neutral-100"
-              : "border-white/10 text-neutral-500",
+              ? "border-primary bg-primary-soft text-primary"
+              : "border-card-rest text-icon-muted",
           ].join(" ")}
         >
           {isSelected ? (
@@ -279,7 +270,7 @@ function DeckCard({
           )}
         </span>
       ) : (
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/5 bg-black/30 text-neutral-400 transition-colors duration-300 group-hover:text-neutral-200">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-background/50 text-icon-muted transition-colors duration-300 group-hover:text-foreground">
           <Layers className="h-5 w-5" strokeWidth={2} />
         </div>
       )}
@@ -299,7 +290,7 @@ function DeckCard({
                 onFinishRenaming();
               }
             }}
-            className="w-full min-w-0 rounded-md border border-white/15 bg-black/40 px-2 py-1 text-base font-semibold text-neutral-100 outline-none"
+            className="w-full min-w-0 rounded-md border border-card-rest bg-background/60 px-2 py-1 text-base font-semibold text-foreground outline-none focus:border-primary"
           />
         ) : (
           <h3
@@ -309,12 +300,12 @@ function DeckCard({
               onStartRenaming();
             }}
             title={dict.flashcards.editHint}
-            className="truncate text-base font-semibold text-neutral-100 transition-colors duration-300 hover:text-white"
+            className="truncate text-base font-semibold text-foreground transition-colors duration-300 hover:text-primary"
           >
             {deck.name}
           </h3>
         )}
-        <p className="mt-0.5 text-xs text-neutral-500">
+        <p className="mt-0.5 text-xs text-muted-foreground">
           {deck.cards.length === 1
             ? dict.flashcards.cardCountOne
             : t(dict.flashcards.cardCountMany, { count: deck.cards.length })}
@@ -377,7 +368,7 @@ function DeckMenu({
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-label={dict.flashcards.deckMenuLabel}
-        className="flex h-8 w-8 items-center justify-center rounded-md text-neutral-500 transition-colors duration-300 hover:text-neutral-200"
+        className="flex h-8 w-8 items-center justify-center rounded-md text-icon-muted transition-colors duration-300 hover:text-foreground"
       >
         <MoreVertical className="h-4 w-4" strokeWidth={2} />
       </button>
@@ -386,7 +377,7 @@ function DeckMenu({
         open={isOpen}
         anchorRef={buttonRef}
         onClose={onClose}
-        className="w-44 rounded-lg border border-white/10 bg-[#141618] p-1.5 shadow-2xl"
+        className="w-44"
       >
         <button
           type="button"
@@ -395,7 +386,7 @@ function DeckMenu({
             event.stopPropagation();
             onEdit(event);
           }}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-300 transition-colors duration-200 hover:bg-white/5 hover:text-neutral-100"
+          className="ui-floating-item flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.flashcards.editAction}
@@ -408,7 +399,7 @@ function DeckMenu({
             event.stopPropagation();
             onShare(event);
           }}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-neutral-500 transition-colors duration-200 hover:bg-white/5"
+          className="ui-floating-item flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium opacity-70 transition-colors duration-200"
         >
           <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.flashcards.shareAction}
@@ -424,7 +415,7 @@ function DeckMenu({
             event.stopPropagation();
             onDelete(event);
           }}
-          className="flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium text-rose-400/90 transition-colors duration-200 hover:bg-rose-500/10 hover:text-rose-300"
+          className="ui-floating-item-danger flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.flashcards.deleteAction}

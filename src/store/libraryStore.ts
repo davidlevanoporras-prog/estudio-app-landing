@@ -166,6 +166,8 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
       textAfter: card?.textAfter ?? "",
       answer: card?.answer ?? "",
       distractors: card?.distractors ?? [],
+      ...(card?.segments ? { segments: card.segments } : {}),
+      ...(card?.answers ? { answers: card.answers } : {}),
     };
     const decks = get().decks.map((deck) =>
       deck.id === deckId ? { ...deck, cards: [...deck.cards, next] } : deck,

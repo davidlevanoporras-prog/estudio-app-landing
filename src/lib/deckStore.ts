@@ -1,5 +1,6 @@
 import { ensureSrsDefaults } from "../utils/spacedRepetition";
 import type { Deck, StudyCardData } from "../types/deck";
+import { resolveQuestionImage } from "../types/deck";
 import { getVaultValue, isVaultAvailable, setAndPersist } from "./appStore";
 import { getSecureJSON, setSecureJSON } from "./secureStorage";
 import { VAULT_KEYS } from "./vaultKeys";
@@ -30,7 +31,13 @@ function isDeck(value: unknown): value is Deck {
 }
 
 function normalizeCard(card: StudyCardData): StudyCardData {
-  return { ...card, ...ensureSrsDefaults(card) };
+  const imageQuestion = resolveQuestionImage(card);
+  const { imageId: _legacy, ...rest } = card;
+  return {
+    ...rest,
+    ...ensureSrsDefaults(card),
+    ...(imageQuestion ? { imageQuestion } : {}),
+  };
 }
 
 function normalizeDeck(deck: Deck): Deck {
