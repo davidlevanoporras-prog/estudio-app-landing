@@ -1,3 +1,5 @@
+mod iap;
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
   tauri::Builder::default()
@@ -14,9 +16,12 @@ pub fn run() {
     // Ver `capabilities/default.json` — sin este `.plugin(...)`, APIs como
     // `readTextFile` / `writeTextFile` / `exists` fallan en runtime.
     .plugin(tauri_plugin_fs::init())
-    // Abre URLs en el navegador del SO (checkout Pro, etc.) —
-    // ver `src/lib/openExternal.ts`.
+    // Abre URLs en el navegador del SO — ver `src/lib/openExternal.ts`.
     .plugin(tauri_plugin_opener::init())
+    .invoke_handler(tauri::generate_handler![
+      iap::purchase_themes_pack,
+      iap::restore_theme_purchases,
+    ])
     .setup(|app| {
       if cfg!(debug_assertions) {
         app.handle().plugin(

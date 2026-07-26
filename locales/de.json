@@ -7,7 +7,7 @@
     "deleteAction": "Löschen"
   },
   "sidebar": {
-    "brand": "Estudio",
+    "brand": "Studium",
     "tagline": "Erweitertes Panel",
     "planLabel": "Aktueller Plan",
     "planValue": "Pro",
@@ -23,7 +23,9 @@
     "sources": "Quellen",
     "challenges": "Herausforderungen",
     "simulator": "Simulator",
-    "assistant": "Assistent"
+    "assistant": "Assistent",
+    "profile": "Profil",
+    "more": "Mehr"
   },
   "greeting": {
     "morning": "Guten Morgen",
@@ -37,15 +39,14 @@
     "cta": "Beginnen"
   },
   "privacyOnboarding": {
-    "title": "🛡️ Absolute Privatsphäre & Autonomie",
-    "subtitle": "Wir gestalten die Architektur — du behältst die volle Kontrolle.",
-    "vaultTitle": "Souveränität",
-    "vaultBody": "Du bist der alleinige Eigentümer deiner Informationen. Deine Decks und dein Fortschritt werden auf deinem Gerät und in deiner persönlichen Cloud (iCloud/Drive) gespeichert. Dein Tresor gehört dir.",
-    "privacyTitle": "Privatsphäre",
-    "privacyBody": "Garantierte Privatsphäre ohne Tracking. Wir analysieren keine Metriken und sammeln keine Daten im Hintergrund. Dein Lernen bleibt privat.",
-    "permissionTitle": "Synchronisierung",
-    "permissionBody": "Transparente Synchronisierung. Die App fragt die Dateiberechtigung ausschließlich an, um deinen lokalen Fortschritt sicher zu speichern.",
-    "cta": "Verstanden und akzeptiert"
+    "title": "Willkommen bei Excellence Absolue",
+    "intro": "Für ein flüssiges, personalisiertes Erlebnis benötigt die App Zugriff auf:",
+    "photosTitle": "Mediathek / Bilder",
+    "photosBody": "Zugriff auf deine Galerie, um Profilfoto und visuelle Umgebungen zu personalisieren.",
+    "storageTitle": "Lokaler Dateispeicher",
+    "storageBody": "Zugriff auf deine Dokumente, um PDFs und Lernpakete zu importieren, zu lesen und zu verarbeiten.",
+    "privacyNote": "Deine Dateien und Daten werden 100 % LOKAL auf diesem Gerät verarbeitet und gespeichert. Keine Informationen gehen an externe Server.",
+    "cta": "Verstanden und fortfahren"
   },
   "header": {
     "welcomeBack": "Willkommen, {{name}}",
@@ -95,20 +96,31 @@
     "codeLabel": "Benutzercode",
     "copyLabel": "In die Zwischenablage kopieren",
     "copiedLabel": "Kopiert!",
-    "subscriptionLabel": "Abonnement",
-    "currentPlanLabel": "Aktueller Plan",
+    "storeSectionLabel": "Studien-Shop",
+    "storeProductTitle": "Premium-Themen",
+    "storeProductDescription": "Schalte die fotografischen Umgebungen im Showroom mit einem Einmalkauf frei.",
+    "unlockThemesCta": "Premium-Themen freischalten",
+    "restorePurchasesCta": "Käufe wiederherstellen",
+    "themesUnlockedBadge": "Premium-Themen freigeschaltet",
+    "storeBusyLabel": "Wird verarbeitet…",
+    "restoreEmptyMessage": "Keine früheren Käufe zum Wiederherstellen gefunden.",
+    "purchaseErrorMessage": "Kauf konnte nicht abgeschlossen werden. Bitte erneut versuchen.",
+    "subscriptionLabel": "Studien-Shop",
+    "currentPlanLabel": "Produkt",
     "plans": {
-      "basic": "Basis",
-      "pro": "Pro"
+      "basic": "Standard",
+      "pro": "Premium-Themen",
+      "excellence": "Excellence"
     },
-    "upgradeCta": "Auf Pro upgraden",
-    "manageCta": "Abonnement verwalten",
+    "planBadgeLabel": "Standard-Edition",
+    "upgradeCta": "Premium-Themen freischalten",
+    "manageCta": "Käufe wiederherstellen",
     "saveLabel": "Änderungen speichern",
     "preferencesSection": "Oberflächeneinstellungen",
     "languageLabel": "Sprache",
     "accentColorLabel": "Akzentfarbe",
-    "accentColorDescription": "Wähle eine freie Farbe, um die Akzente der gesamten Oberfläche zu personalisieren.",
-    "accentColorResetLabel": "Auf Themenfarbe zurücksetzen",
+    "accentColorDescription": "Diese Farbe wird nur für das aktive Thema gespeichert. Jede Umgebung kann einen eigenen Akzent haben.",
+    "accentColorResetLabel": "Auf Standardfarbe zurücksetzen",
     "changePhotoLabel": "Foto ändern",
     "uiSpeedLabel": "Oberflächengeschwindigkeit",
     "uiSpeedOptions": {
@@ -123,20 +135,13 @@
     "saveCredentialLabel": "Zugangsdaten speichern",
     "credentialSavedLabel": "Zugangsdaten im Tresor gespeichert",
     "credentialsDisclaimer": "Erweiterte Verarbeitung erfordert Ihre eigene Zugangsdaten. Schlüssel werden lokal gespeichert und niemals geteilt.",
-    "licenseSection": "Nutzungslizenz",
-    "licenseCodeLabel": "Lizenzcode",
-    "licenseCodePlaceholder": "XXXX-XXXX",
-    "licenseRedeemLabel": "Einlösen",
-    "licenseVipToast": "VIP-Zugang gewährt. Willkommen, Architekt.",
-    "licenseActiveLabel": "Pro-Lizenz aktiv",
-    "licenseInvalidLabel": "Ungültiger Code",
-    "credentialsLockedLabel": "Die personalisierte Intelligenz-Engine ist ausschließlich für Pro-Nutzer."
+    "credentialsLockedLabel": "Verfügbar nach Freischaltung der Premium-Themen."
   },
   "paywall": {
-    "title": "Funktion gesperrt",
-    "navLockedMessage": "Funktion gesperrt. Erwerben Sie die Pro-Lizenz für erweiterte Argumentation und Kartografie.",
+    "title": "Thema gesperrt",
+    "navLockedMessage": "Schalte Premium-Themen im Studien-Shop frei, um diese Umgebung zu nutzen.",
     "dismissLabel": "Verstanden",
-    "themeLockedLabel": "Nur Pro"
+    "themeLockedLabel": "Premium-Themen"
   },
   "themeView": {
     "backLabel": "Zurück zum Profil",
@@ -152,9 +157,34 @@
       "system": "Automatisch"
     }
   },
+  "librarySearch": {
+    "placeholder": "Stapel, Tags suchen…",
+    "label": "Bibliothek durchsuchen",
+    "noResults": "Keine Stapel passen zu „{{query}}“",
+    "clearFilter": "Filter löschen"
+  },
   "flashcards": {
     "heading": "Meine Stapel",
     "createDeck": "Stapel erstellen",
+    "importAnki": "Stapel laden",
+    "importAnkiLoading": "Karten werden importiert…",
+    "importAnkiSuccess": "Stapel erfolgreich importiert",
+    "importAnkiEmpty": "Keine importierbaren Karten gefunden.",
+    "importAnkiError": "Text oder Datei konnte nicht importiert werden.",
+    "importModalTitle": "Karten importieren (Text / CSV)",
+    "importModalSubtitle": "Füge Vorder-/Rückseite getrennt durch Tab, Komma oder | ein, oder lade eine .txt / .csv hoch.",
+    "importDeckNameLabel": "Stapelname",
+    "importPasteLabel": "Text einfügen",
+    "importPastePlaceholder": "Frage 1\tAntwort 1\nFrage 2 | Antwort 2\nFrage 3, Antwort 3",
+    "importFileLabel": "Oder Datei hochladen",
+    "importFileButton": ".txt / .csv / .tsv wählen",
+    "importConfirmButton": "Stapel importieren",
+    "importAnkiHelpLink": "Wie exportiere ich meinen Stapel aus Anki?",
+    "importAnkiHelpTitle": "Kurzanleitung Anki → Text",
+    "importAnkiHelpStep1Label": "In Anki",
+    "importAnkiHelpStep1Body": "Datei ➔ Exportieren ➔ „Notizen im Nur-Text-Format (.txt)“ (tabulatorgetrennt) wählen.",
+    "importAnkiHelpStep2Label": "In Excellence",
+    "importAnkiHelpStep2Body": "Lade die erzeugte .txt-Datei hoch oder füge den Text in das Feld unten ein.",
     "emptyState": "Dein Wissensspeicher ist leer. Erstelle einen Stapel, um zu beginnen.",
     "newDeckName": "Neuer Stapel",
     "editHint": "Stapelnamen bearbeiten",
@@ -361,7 +391,23 @@
     "previewEmpty": "Umschließe die Antwort mit [[doppelten Klammern]], um die Lücke zu sehen.",
     "distractors": "Ablenkungen",
     "falseOption": "Falsche Option {{n}}",
-    "saveCard": "Karte speichern"
+    "saveCard": "Karte speichern",
+    "exportButton": "Exportieren",
+    "exportModalTitle": "Decks paketieren",
+    "exportModalSubtitle": "Wähle die Decks für die .easim.json-Datei.",
+    "exportSelectAll": "Alle auswählen",
+    "exportDeselectAll": "Auswahl aufheben",
+    "exportSelectedCount": "{{count}} ausgewählt",
+    "exportDeckMeta": "{{count}} Karten · {{folder}}",
+    "exportConfirm": "Paketieren und speichern",
+    "exportBusy": "Paketiere…",
+    "exportNoDecks": "Noch keine Decks in der Bibliothek.",
+    "exportEmptySelection": "Wähle mindestens ein Deck zum Exportieren.",
+    "exportError": "Datei konnte nicht gespeichert werden. Bitte erneut versuchen.",
+    "importButton": "Deck importieren",
+    "importDropHint": ".easim.json-Datei hier ablegen",
+    "importSuccess": "{{count}} Deck(s) importiert.",
+    "importInvalidFormat": "Simulatorformat nicht erkannt"
   },
   "sources": {
     "title": "Quellen",
@@ -405,10 +451,10 @@
     "seconds": "{{s}}s"
   },
   "profileDev": {
-    "toolsTitle": "Entwicklertools",
-    "toolsBody": "Löscht localStorage, Media-IndexedDB und lädt die App neu. Unumkehrbar auf diesem Gerät.",
+    "toolsTitle": "Daten & Privatsphäre",
+    "toolsBody": "Deine Daten werden zu 100 % lokal auf diesem Gerät gespeichert. Du kannst die App jederzeit zurücksetzen und gespeicherte Dateien sowie Einstellungen löschen.",
     "resetConfirm": "Alle lokalen Daten löschen und neu laden? Dies kann nicht rückgängig gemacht werden.",
-    "resetButton": "Alle Daten löschen (Reset)"
+    "resetButton": "Lokale Daten löschen"
   },
   "emptyStates": {
     "noDecks": "Noch keine Decks.",

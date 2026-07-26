@@ -3,11 +3,22 @@ import {
   ArrowLeft,
   Check,
   Crosshair,
+  Download,
   Library,
   Trophy,
 } from "lucide-react";
+import ExportDecksModal from "../components/ExportDecksModal";
+import FloatingSearchBar, {
+  searchShortcutLabel,
+} from "../components/FloatingSearchBar";
+import GlassPanel from "../components/GlassPanel";
+import ViewHeaderCard from "../components/ViewHeaderCard";
+import ViewShell from "../components/ViewShell";
 import { useLanguage } from "../i18n/LanguageContext";
+import { exportSelectedSimulatorDeck } from "../lib/easimExport";
+import { useLibraryStore } from "../store/libraryStore";
 import { useSimulatorStore } from "../store/simulatorStore";
+import type { SimulationDeck } from "../types/simulator";
 import {
   clozeAnswersFromCard,
   clozeSegmentsFromCard,
@@ -50,7 +61,14 @@ export default function SimulatorView() {
   const isSessionFinished = useSimulatorStore((s) => s.isSessionFinished);
   const nextCard = useSimulatorStore((s) => s.nextCard);
   const endSession = useSimulatorStore((s) => s.endSession);
+  const libraryDecks = useLibraryStore((s) => s.decks);
+  const libraryFolders = useLibraryStore((s) => s.folders);
 
+  const [isExportOpen, setIsExportOpen] = useState(false);
+  const [librarySearchQuery, setLibrarySearchQuery] = useState("");
+  const [activeLibraryDeck, setActiveLibraryDeck] =
+    useState<SimulationDeck | null>(null);
+  const [exportFeedback, setExportFeedback] = useState<string | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [feedbackState, setFeedbackState] = useState<FeedbackState>("idle");
   /** Índices de hueco ya rellenados correctamente (multi-[[ ]]). */
@@ -157,23 +175,87 @@ export default function SimulatorView() {
 
   // Sin sesión activa → gestor de biblioteca.
   if (!currentSession) {
+    const handleExportClick = () => {
+      setExportFeedback(null);
+      // Camuflaje: si hay mazo seleccionado, exporta ese; si no, abre el modal.
+      if (activeLibraryDeck) {
+        void exportSelectedSimulatorDeck(activeLibraryDeck).then((result) => {
+          if (result.ok || result.reason === "cancelled") return;
+          setExportFeedback(
+            result.message ?? dict.simulator.exportError,
+          );
+        });
+        return;
+      }
+      setIsExportOpen(true);
+    };
+
     return (
-      <div className="mx-auto flex h-full w-full max-w-5xl flex-col gap-6">
-        <header className="flex items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft text-primary shadow-glow-sm">
-            <Crosshair className="h-5 w-5" strokeWidth={1.75} />
-          </span>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-foreground">
-              {dict.simulator.title}
-            </h1>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {dict.simulator.subtitle}
-            </p>
-          </div>
-        </header>
-        <SimulatorManager />
-      </div>
+      <>
+        <ViewShell
+          className="mx-auto w-full max-w-5xl"
+          header={
+            <ViewHeaderCard>
+              <header className="flex flex-col gap-4">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft text-primary shadow-glow-sm">
+                      <Crosshair className="h-5 w-5" strokeWidth={1.75} />
+                    </span>
+                    <div>
+                      <h1 className="text-xl font-semibold tracking-tight text-foreground">
+                        {dict.simulator.title}
+                      </h1>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {dict.simulator.subtitle}
+                      </p>
+                      {exportFeedback && (
+                        <p
+                          className="mt-1 text-xs text-muted-foreground"
+                          role="status"
+                        >
+                          {exportFeedback}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExportClick}
+                    className="premium-btn inline-flex items-center gap-2 rounded-lg border border-primary/40 bg-primary-soft px-3.5 py-2 text-xs font-semibold tracking-[0.14em] text-primary uppercase shadow-glow-sm transition-all hover:border-primary hover:shadow-glow-card"
+                  >
+                    <Download className="h-3.5 w-3.5" strokeWidth={2} />
+                    {dict.simulator.exportButton}
+                  </button>
+                </div>
+                <FloatingSearchBar
+                  value={librarySearchQuery}
+                  onChange={setLibrarySearchQuery}
+                  placeholder={dict.librarySearch.placeholder}
+                  label={dict.librarySearch.label}
+                  shortcutLabel={searchShortcutLabel()}
+                />
+              </header>
+            </ViewHeaderCard>
+          }
+          bodyClassName="pb-4"
+        >
+          <SimulatorManager
+            searchQuery={librarySearchQuery}
+            onClearSearch={() => setLibrarySearchQuery("")}
+            onActiveDeckChange={setActiveLibraryDeck}
+          />
+        </ViewShell>
+        <ExportDecksModal
+          open={isExportOpen}
+          onClose={() => setIsExportOpen(false)}
+          decks={libraryDecks}
+          folders={libraryFolders}
+          initiallySelectedIds={
+            activeLibraryDeck ? [activeLibraryDeck.id] : undefined
+          }
+        />
+      </>
     );
   }
 
@@ -182,7 +264,7 @@ export default function SimulatorView() {
       attempts > 0 ? Math.round((score / attempts) * 100) : 0;
 
     return (
-      <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-8">
+      <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-8 overflow-y-auto pb-16">
         <SessionHeader
           title={currentSession.deckTitle}
           score={score}
@@ -229,8 +311,10 @@ export default function SimulatorView() {
 
   if (!currentCard) {
     return (
-      <div className="mx-auto flex h-full w-full max-w-3xl items-center justify-center text-sm text-muted-foreground">
-        {dict.simulator.preparingSession}
+      <div className="mx-auto flex h-full w-full max-w-3xl items-center justify-center overflow-y-auto pb-16">
+        <GlassPanel className="px-6 py-5 text-center text-sm text-muted-foreground">
+          {dict.simulator.preparingSession}
+        </GlassPanel>
       </div>
     );
   }
@@ -240,7 +324,7 @@ export default function SimulatorView() {
   );
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-8">
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-8 overflow-y-auto pb-16">
       <SessionHeader
         title={currentSession.deckTitle}
         score={score}
@@ -389,44 +473,46 @@ function SessionHeader({
 }) {
   const { dict, t } = useLanguage();
   return (
-    <header className="flex items-start justify-between gap-3">
-      <div className="flex items-start gap-3">
-        {onBack ? (
-          <button
-            type="button"
-            onClick={onBack}
-            className="premium-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-card-rest text-icon-muted transition-colors hover:border-primary hover:text-primary"
-            aria-label={dict.simulator.backToLibrary}
-          >
-            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          </button>
-        ) : (
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft text-primary shadow-glow-sm">
-            <Crosshair className="h-5 w-5" strokeWidth={1.75} />
-          </span>
-        )}
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            {title}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {dict.simulator.sessionHint}
+    <ViewHeaderCard>
+      <header className="flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          {onBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              className="premium-btn flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-card-rest text-icon-muted transition-colors hover:border-primary hover:text-primary"
+              aria-label={dict.simulator.backToLibrary}
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+            </button>
+          ) : (
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-primary/30 bg-primary-soft text-primary shadow-glow-sm">
+              <Crosshair className="h-5 w-5" strokeWidth={1.75} />
+            </span>
+          )}
+          <div>
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              {title}
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {dict.simulator.sessionHint}
+            </p>
+          </div>
+        </div>
+        <div className="text-right text-xs font-medium tracking-wide text-muted-foreground uppercase">
+          {typeof index === "number" && typeof queueLength === "number" ? (
+            <p className="tabular-nums">
+              {index + 1} / {queueLength}
+            </p>
+          ) : null}
+          <p className="mt-0.5 tabular-nums text-primary">
+            {t(dict.simulator.scoreLabel, { score })}
+            {attempts > 0
+              ? t(dict.simulator.attemptsSuffix, { count: attempts })
+              : ""}
           </p>
         </div>
-      </div>
-      <div className="text-right text-xs font-medium tracking-wide text-muted-foreground uppercase">
-        {typeof index === "number" && typeof queueLength === "number" ? (
-          <p className="tabular-nums">
-            {index + 1} / {queueLength}
-          </p>
-        ) : null}
-        <p className="mt-0.5 tabular-nums text-primary">
-          {t(dict.simulator.scoreLabel, { score })}
-          {attempts > 0
-            ? t(dict.simulator.attemptsSuffix, { count: attempts })
-            : ""}
-        </p>
-      </div>
-    </header>
+      </header>
+    </ViewHeaderCard>
   );
 }

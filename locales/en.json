@@ -7,7 +7,7 @@
     "deleteAction": "Delete"
   },
   "sidebar": {
-    "brand": "Estudio",
+    "brand": "Study",
     "tagline": "Advanced Panel",
     "planLabel": "Current Plan",
     "planValue": "Pro",
@@ -23,7 +23,9 @@
     "sources": "Sources",
     "challenges": "Challenges",
     "simulator": "Simulator",
-    "assistant": "Assistant"
+    "assistant": "Assistant",
+    "profile": "Profile",
+    "more": "More"
   },
   "greeting": {
     "morning": "Good morning",
@@ -37,15 +39,14 @@
     "cta": "Begin"
   },
   "privacyOnboarding": {
-    "title": "🛡️ Absolute Privacy & Autonomy",
-    "subtitle": "We design the architecture — you keep total control.",
-    "vaultTitle": "Sovereignty",
-    "vaultBody": "You are the sole owner of your information. Your decks and progress are saved on your device and in your personal cloud (iCloud/Drive). Your vault is yours.",
-    "privacyTitle": "Privacy",
-    "privacyBody": "Privacy guaranteed, with no tracking. We don’t analyze metrics or collect data in the background. Your study stays private.",
-    "permissionTitle": "Sync",
-    "permissionBody": "Transparent sync. The app will request file permission solely to save your local progress securely.",
-    "cta": "Understood and Accepted"
+    "title": "Welcome to Excellence Absolue",
+    "intro": "To give you a smooth, personalized experience, the app needs access to:",
+    "photosTitle": "Photo Library / Images",
+    "photosBody": "Access to your gallery to personalize your profile photo and visual environments.",
+    "storageTitle": "Local File Storage",
+    "storageBody": "Access to your documents to import, read, and process your PDFs and study decks.",
+    "privacyNote": "Your files and data are processed and stored 100% LOCALLY on this device. No information is sent to external servers.",
+    "cta": "Got it — Continue"
   },
   "header": {
     "welcomeBack": "Welcome, {{name}}",
@@ -95,20 +96,31 @@
     "codeLabel": "User Code",
     "copyLabel": "Copy to clipboard",
     "copiedLabel": "Copied!",
-    "subscriptionLabel": "Subscription",
-    "currentPlanLabel": "Current Plan",
+    "storeSectionLabel": "Study Store",
+    "storeProductTitle": "Premium Themes",
+    "storeProductDescription": "Unlock the photographic environments in the Showroom with a one-time purchase.",
+    "unlockThemesCta": "Unlock Premium Themes",
+    "restorePurchasesCta": "Restore Purchases",
+    "themesUnlockedBadge": "Premium Themes unlocked",
+    "storeBusyLabel": "Processing…",
+    "restoreEmptyMessage": "No previous purchases were found to restore.",
+    "purchaseErrorMessage": "Purchase could not be completed. Please try again.",
+    "subscriptionLabel": "Study Store",
+    "currentPlanLabel": "Product",
     "plans": {
-      "basic": "Basic",
-      "pro": "Pro"
+      "basic": "Standard",
+      "pro": "Premium Themes",
+      "excellence": "Excellence"
     },
-    "upgradeCta": "Upgrade to Pro",
-    "manageCta": "Manage Subscription",
+    "planBadgeLabel": "Standard Edition",
+    "upgradeCta": "Unlock Premium Themes",
+    "manageCta": "Restore Purchases",
     "saveLabel": "Save changes",
     "preferencesSection": "Interface Preferences",
     "languageLabel": "Language",
     "accentColorLabel": "Accent Color",
-    "accentColorDescription": "Pick a free color to personalize the accent across the whole interface.",
-    "accentColorResetLabel": "Reset to theme color",
+    "accentColorDescription": "This color is saved only for the active theme. Each environment can have its own accent.",
+    "accentColorResetLabel": "Reset to default color",
     "changePhotoLabel": "Change Photo",
     "uiSpeedLabel": "Interface Speed",
     "uiSpeedOptions": {
@@ -123,20 +135,13 @@
     "saveCredentialLabel": "Save Credential",
     "credentialSavedLabel": "Credential saved to the Vault",
     "credentialsDisclaimer": "Advanced processing requires your own credential. Keys are stored locally and are never shared.",
-    "licenseSection": "Usage License",
-    "licenseCodeLabel": "License code",
-    "licenseCodePlaceholder": "XXXX-XXXX",
-    "licenseRedeemLabel": "Redeem",
-    "licenseVipToast": "VIP Access Granted. Welcome, Architect.",
-    "licenseActiveLabel": "Pro license active",
-    "licenseInvalidLabel": "Invalid code",
-    "credentialsLockedLabel": "The personalized intelligence engine is exclusive to Pro users."
+    "credentialsLockedLabel": "Available after unlocking Premium Themes."
   },
   "paywall": {
-    "title": "Feature locked",
-    "navLockedMessage": "Feature locked. Purchase a Pro license to access advanced reasoning and cartography.",
+    "title": "Theme locked",
+    "navLockedMessage": "Unlock Premium Themes in the Study Store to use this environment.",
     "dismissLabel": "Understood",
-    "themeLockedLabel": "Pro exclusive"
+    "themeLockedLabel": "Premium Themes"
   },
   "themeView": {
     "backLabel": "Back to Profile",
@@ -152,9 +157,34 @@
       "system": "Automatic"
     }
   },
+  "librarySearch": {
+    "placeholder": "Search decks, tags…",
+    "label": "Search library",
+    "noResults": "No decks match \"{{query}}\"",
+    "clearFilter": "Clear filter"
+  },
   "flashcards": {
     "heading": "My Decks",
     "createDeck": "Create Deck",
+    "importAnki": "Load deck",
+    "importAnkiLoading": "Importing cards…",
+    "importAnkiSuccess": "Deck imported successfully",
+    "importAnkiEmpty": "No importable cards found.",
+    "importAnkiError": "Could not import the text or file.",
+    "importModalTitle": "Import Cards (Text / CSV)",
+    "importModalSubtitle": "Paste Front and Back rows separated by tab, comma, or |, or upload a .txt / .csv.",
+    "importDeckNameLabel": "Deck name",
+    "importPasteLabel": "Paste text",
+    "importPastePlaceholder": "Question 1\tAnswer 1\nQuestion 2 | Answer 2\nQuestion 3, Answer 3",
+    "importFileLabel": "Or upload a file",
+    "importFileButton": "Choose .txt / .csv / .tsv",
+    "importConfirmButton": "Import deck",
+    "importAnkiHelpLink": "How do I export my deck from Anki?",
+    "importAnkiHelpTitle": "Quick guide: Anki → Text",
+    "importAnkiHelpStep1Label": "In Anki",
+    "importAnkiHelpStep1Body": "File ➔ Export ➔ choose “Notes in Plain Text (.txt)” (tab-separated).",
+    "importAnkiHelpStep2Label": "In Excellence",
+    "importAnkiHelpStep2Body": "Upload the generated .txt file or paste the text into the box below.",
     "emptyState": "Your knowledge vault is empty. Create a deck to get started.",
     "newDeckName": "New Deck",
     "editHint": "Edit deck name",
@@ -361,7 +391,23 @@
     "previewEmpty": "Wrap the answer in [[double brackets]] to see the blank.",
     "distractors": "Distractors",
     "falseOption": "False option {{n}}",
-    "saveCard": "Save Card"
+    "saveCard": "Save Card",
+    "exportButton": "Export",
+    "exportModalTitle": "Package Decks",
+    "exportModalSubtitle": "Choose the decks to include in the .easim.json file.",
+    "exportSelectAll": "Select all",
+    "exportDeselectAll": "Deselect all",
+    "exportSelectedCount": "{{count}} selected",
+    "exportDeckMeta": "{{count}} cards · {{folder}}",
+    "exportConfirm": "Package and save",
+    "exportBusy": "Packaging…",
+    "exportNoDecks": "There are no decks in the library yet.",
+    "exportEmptySelection": "Select at least one deck to export.",
+    "exportError": "Could not save the file. Please try again.",
+    "importButton": "Import deck",
+    "importDropHint": "Drop the .easim.json file here",
+    "importSuccess": "{{count}} deck(s) imported.",
+    "importInvalidFormat": "Unrecognized simulator format"
   },
   "sources": {
     "title": "Sources",
@@ -405,10 +451,10 @@
     "seconds": "{{s}}s"
   },
   "profileDev": {
-    "toolsTitle": "Developer tools",
-    "toolsBody": "Clears localStorage, media IndexedDB, and reloads the app. Irreversible on this device.",
+    "toolsTitle": "Data & Privacy",
+    "toolsBody": "Your data is stored 100% locally on this device. You can reset the app and delete your saved files and settings at any time.",
     "resetConfirm": "Delete all local data and reload? This cannot be undone.",
-    "resetButton": "Clear all data (Reset)"
+    "resetButton": "Clear Local Data"
   },
   "emptyStates": {
     "noDecks": "No decks yet.",

@@ -7,12 +7,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  isValidVipCode,
-  loadIsPremium,
-  saveIsPremium,
-} from "../lib/license";
-import { isDevProForced } from "../lib/devPro";
+import { loadIsPremium } from "../lib/license";
 
 type LicenseContextValue = {
   /** `false` por defecto — hasta canjear God Mode. */
@@ -29,20 +24,19 @@ type LicenseContextValue = {
 const LicenseContext = createContext<LicenseContextValue | null>(null);
 
 /**
- * Estado global de licencia Pro / God Mode. Vive junto a
- * `LanguageProvider` en `App.tsx` para que Sidebar, Perfil y Showroom
- * lean el mismo flag sin prop-drilling.
+ * Acceso de funciones de la app (no temas). Los entornos fotográficos
+ * usan `ThemeEntitlementProvider` + IAP StoreKit — sin licencias ni
+ * checkout externo.
  */
 export function LicenseProvider({ children }: { children: ReactNode }) {
-  const [isPremium, setIsPremium] = useState(false);
+  const [isPremium, setIsPremium] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
-    void loadIsPremium().then((value) => {
+    void loadIsPremium().then(() => {
       if (!isMounted) return;
-      // Flag VITE_DEV_PRO: solo en Vite DEV; nunca en producción.
-      setIsPremium(value || isDevProForced());
+      setIsPremium(true);
       setIsLoading(false);
     });
     return () => {
@@ -50,10 +44,7 @@ export function LicenseProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  const redeemLicense = useCallback(async (code: string) => {
-    const trimmed = code.trim();
-    if (!isValidVipCode(trimmed)) return false;
-    await saveIsPremium(true);
+  const redeemLicense = useCallback(async (_code: string) => {
     setIsPremium(true);
     return true;
   }, []);

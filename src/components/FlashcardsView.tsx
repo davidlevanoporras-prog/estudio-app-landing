@@ -1,27 +1,58 @@
 import {
   useEffect,
+  useMemo,
   useRef,
   useState,
   type MouseEvent as ReactMouseEvent,
 } from "react";
 import {
   Check,
+  FileUp,
   FolderX,
   Layers,
   MoreVertical,
   Pencil,
   Plus,
+  SearchX,
   Share2,
   Trash2,
 } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
+import { exportDeckToEadeck } from "../lib/eadeckExport";
+import { matchesLibrarySearch } from "../lib/librarySearch";
 import type { Deck } from "../types/deck";
 import ConfirmDialog from "./ConfirmDialog";
+import EmptyStatePanel from "./EmptyStatePanel";
+import FloatingSearchBar, {
+  searchShortcutLabel,
+} from "./FloatingSearchBar";
+import ImportCardsModal from "./ImportCardsModal";
 import { PortalMenu } from "./PortalMenu";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
+
+function deckMatchesQuery(deck: Deck, query: string): boolean {
+  const tags = [
+    ...new Set(
+      deck.cards
+        .map((card) => card.tag)
+        .filter((tag): tag is string => Boolean(tag && tag.trim())),
+    ),
+  ];
+  return matchesLibrarySearch(query, [
+    deck.name,
+    ...tags,
+    ...tags.map((tag) => `#${tag}`),
+    String(deck.cards.length),
+    `${deck.cards.length} cards`,
+    `${deck.cards.length} tarjetas`,
+  ]);
+}
 
 type FlashcardsViewProps = {
   decks: Deck[];
   onCreateDeck: () => string;
+  onImportDecks: (decks: Deck[]) => void;
   onRenameDeck: (id: string, name: string) => void;
   onOpenDeck: (id: string) => void;
   onEditDeck: (id: string) => void;
@@ -35,6 +66,7 @@ type FlashcardsViewProps = {
 export default function FlashcardsView({
   decks,
   onCreateDeck,
+  onImportDecks,
   onRenameDeck,
   onOpenDeck,
   onEditDeck,
@@ -46,10 +78,51 @@ export default function FlashcardsView({
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [pendingDelete, setPendingDelete] = useState<string[] | null>(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [toast, setToast] = useState<{
+    tone: "success" | "error";
+    message: string;
+  } | null>(null);
+  const toastTimerRef = useRef<number | null>(null);
+
+  const filteredDecks = useMemo(
+    () => decks.filter((deck) => deckMatchesQuery(deck, searchQuery)),
+    [decks, searchQuery],
+  );
+  const hasActiveSearch = searchQuery.trim().length > 0;
+
+  const showToast = (tone: "success" | "error", message: string) => {
+    if (toastTimerRef.current !== null) {
+      window.clearTimeout(toastTimerRef.current);
+    }
+    setToast({ tone, message });
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 3200);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current !== null) {
+        window.clearTimeout(toastTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleCreateDeck = () => {
     const newDeckId = onCreateDeck();
     setRenamingDeckId(newDeckId);
+  };
+
+  const handleOpenImportModal = () => {
+    setShowImportModal(true);
+  };
+
+  const handleImportDeck = (deck: Deck) => {
+    onImportDecks([deck]);
+    showToast("success", dict.flashcards.importAnkiSuccess);
   };
 
   const handleToggleSelectionMode = () => {
@@ -93,65 +166,117 @@ export default function FlashcardsView({
       : dict.flashcards.selectMode;
 
   return (
-    <>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          {dict.flashcards.heading}
-        </h2>
+    <ViewShell
+      header={
+        <ViewHeaderCard>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                {dict.flashcards.heading}
+              </h2>
 
-        <div className="flex flex-wrap items-center gap-2">
-          {isSelectionMode && selectedIds.size > 0 && (
+              <div className="flex flex-wrap items-center gap-2">
+                {isSelectionMode && selectedIds.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelected}
+                    className="flex items-center gap-2 rounded-lg border border-rose-400/30 px-3 py-2 text-sm font-medium text-rose-500 transition-colors duration-300 hover:border-rose-400/50 hover:text-rose-600"
+                  >
+                    <Trash2 className="h-4 w-4" strokeWidth={2} />
+                    {t(dict.flashcards.deleteSelectedButton, {
+                      count: selectedIds.size,
+                    })}
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleToggleSelectionMode}
+                  className="rounded-lg border border-card-rest bg-transparent px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors duration-300 hover:border-primary hover:text-foreground"
+                >
+                  {selectionButtonLabel}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleOpenImportModal}
+                  className="premium-btn flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2 text-sm font-medium tracking-wide text-foreground transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
+                >
+                  <FileUp className="h-4 w-4" strokeWidth={2} />
+                  {dict.flashcards.importAnki}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleCreateDeck}
+                  className="flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2 text-sm font-medium tracking-wide text-foreground uppercase transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={2.5} />
+                  {dict.flashcards.createDeck}
+                </button>
+              </div>
+            </div>
+
+            {decks.length > 0 && (
+              <FloatingSearchBar
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder={dict.librarySearch.placeholder}
+                label={dict.librarySearch.label}
+                shortcutLabel={searchShortcutLabel()}
+              />
+            )}
+          </div>
+        </ViewHeaderCard>
+      }
+      bodyClassName="pb-4"
+    >
+      {decks.length === 0 ? (
+        <EmptyStatePanel
+          className="py-28"
+          icon={<FolderX className="h-6 w-6" strokeWidth={1.5} />}
+          description={dict.emptyStates.noDecks}
+          action={
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={handleOpenImportModal}
+                className="premium-btn flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2.5 text-sm font-medium tracking-wide text-foreground transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
+              >
+                <FileUp className="h-4 w-4" strokeWidth={2} />
+                {dict.flashcards.importAnki}
+              </button>
+              <button
+                type="button"
+                onClick={handleCreateDeck}
+                className="flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2.5 text-sm font-medium tracking-wide text-foreground uppercase transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.5} />
+                {dict.emptyStates.createFirstDeck}
+              </button>
+            </div>
+          }
+        />
+      ) : hasActiveSearch && filteredDecks.length === 0 ? (
+        <EmptyStatePanel
+          className="py-20"
+          icon={<SearchX className="h-6 w-6" strokeWidth={1.5} />}
+          description={t(dict.librarySearch.noResults, {
+            query: searchQuery.trim(),
+          })}
+          action={
             <button
               type="button"
-              onClick={handleDeleteSelected}
-              className="flex items-center gap-2 rounded-lg border border-rose-400/30 px-3 py-2 text-sm font-medium text-rose-500 transition-colors duration-300 hover:border-rose-400/50 hover:text-rose-600"
+              onClick={() => setSearchQuery("")}
+              className="rounded-lg border border-card-rest px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors hover:border-primary hover:text-foreground"
             >
-              <Trash2 className="h-4 w-4" strokeWidth={2} />
-              {t(dict.flashcards.deleteSelectedButton, {
-                count: selectedIds.size,
-              })}
+              {dict.librarySearch.clearFilter}
             </button>
-          )}
-
-          <button
-            type="button"
-            onClick={handleToggleSelectionMode}
-            className="rounded-lg border border-card-rest bg-transparent px-4 py-2 text-sm font-medium text-secondary-foreground transition-colors duration-300 hover:border-primary hover:text-foreground"
-          >
-            {selectionButtonLabel}
-          </button>
-
-          <button
-            type="button"
-            onClick={handleCreateDeck}
-            className="flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2 text-sm font-medium tracking-wide text-foreground uppercase transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            {dict.flashcards.createDeck}
-          </button>
-        </div>
-      </div>
-
-      {decks.length === 0 ? (
-        <div className="photo-glass-panel flex flex-col items-center justify-center gap-5 rounded-xl border border-dashed border-card-rest bg-card/40 py-28 text-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-            <FolderX className="h-6 w-6" strokeWidth={1.5} />
-          </div>
-          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            {dict.emptyStates.noDecks}
-          </p>
-          <button
-            type="button"
-            onClick={handleCreateDeck}
-            className="flex items-center gap-2 rounded-lg border border-card-rest bg-card px-4 py-2.5 text-sm font-medium tracking-wide text-foreground uppercase transition-colors duration-300 hover:border-primary hover:shadow-glow-sm"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            {dict.emptyStates.createFirstDeck}
-          </button>
-        </div>
+          }
+        />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {decks.map((deck) => (
+          {filteredDecks.map((deck) => (
             <DeckCard
               key={deck.id}
               deck={deck}
@@ -188,7 +313,30 @@ export default function FlashcardsView({
           onCancel={() => setPendingDelete(null)}
         />
       )}
-    </>
+
+      {showImportModal && (
+        <ImportCardsModal
+          defaultDeckName={dict.flashcards.newDeckName}
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportDeck}
+        />
+      )}
+
+      {toast && (
+        <div
+          className={[
+            "fixed bottom-20 left-1/2 z-[95] max-w-md -translate-x-1/2 rounded-lg border px-4 py-3 text-sm font-medium shadow-2xl md:bottom-8",
+            toast.tone === "success"
+              ? "border-emerald-500/40 bg-emerald-950/90 text-emerald-100"
+              : "border-rose-500/40 bg-rose-950/90 text-rose-100",
+          ].join(" ")}
+          role="status"
+          aria-live="polite"
+        >
+          {toast.message}
+        </div>
+      )}
+    </ViewShell>
   );
 }
 
@@ -324,6 +472,8 @@ function DeckCard({
           }}
           onShare={(event) => {
             event.stopPropagation();
+            onCloseMenu();
+            void exportDeckToEadeck(deck);
           }}
           onDelete={(event) => {
             event.stopPropagation();
@@ -399,13 +549,10 @@ function DeckMenu({
             event.stopPropagation();
             onShare(event);
           }}
-          className="ui-floating-item flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium opacity-70 transition-colors duration-200"
+          className="ui-floating-item flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left text-sm font-medium transition-colors duration-200"
         >
           <Share2 className="h-3.5 w-3.5" strokeWidth={2} />
           {dict.flashcards.shareAction}
-          <span className="ml-auto text-[10px] uppercase">
-            {dict.flashcards.shareComingSoon}
-          </span>
         </button>
 
         <button

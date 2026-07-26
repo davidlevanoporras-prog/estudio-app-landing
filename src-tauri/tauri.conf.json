@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Excellence Absolue",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "identifier": "com.excellenceabsolue.desktop",
   "build": {
     "frontendDist": "../dist",
@@ -22,32 +22,22 @@
       }
     ],
     "security": {
-      "csp": null,
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: asset: http://asset.localhost https://asset.localhost; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost; media-src 'self' blob: asset: http://asset.localhost https://asset.localhost; frame-src 'self' blob: asset: http://asset.localhost https://asset.localhost; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'",
       "assetProtocol": {
         "enable": true,
-        "scope": [
-          "$APPDATA/**",
-          "$HOME/**",
-          "$DOCUMENT/**",
-          "$DOWNLOAD/**",
-          "$DESKTOP/**",
-          "/Volumes/**"
-        ]
+        "scope": ["$APPDATA/**", "$APPCONFIG/**"]
       }
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["dmg", "app"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ],
-    "android": {
-      "debugApplicationIdSuffix": ".debug"
-    }
+    ]
   }
 }

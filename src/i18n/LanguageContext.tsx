@@ -52,6 +52,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
     document.documentElement.setAttribute("lang", language);
     void i18n.changeLanguage(language);
+    // Título de pestaña alineado con el brand del Sidebar (evita "Estudio" fijo).
+    document.title = `${translations[language].sidebar.brand} — Dashboard`;
   }, [language]);
 
   const value = useMemo<LanguageContextValue>(

@@ -6,6 +6,13 @@ import {
   type Flashcard,
 } from "../types/schema";
 
+/**
+ * TODO(unify-vault): Canal SECUNDARIO — escribe `excellence/excellence_vault.json`
+ * (plugin-fs). La UI de Flashcards lee/escribe `deckStore` → `app_data.dat`.
+ * Archivos distintos ⇒ sin colisión fatal al guardar. Unificar post-launch
+ * con migración; hasta entonces NO usar este store como fuente de verdad UI.
+ */
+
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 /** Suelo clínico del factor de facilidad (SM-2). */
 const EF_FLOOR = 1.3;

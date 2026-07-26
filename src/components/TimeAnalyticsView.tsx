@@ -3,6 +3,8 @@ import { useLanguage } from "../i18n/LanguageContext";
 import { formatDurationHuman, formatGlobalTime } from "../lib/time";
 import type { Language } from "../i18n/dictionary";
 import type { Deck } from "../types/deck";
+import EmptyStatePanel from "./EmptyStatePanel";
+import GlassPanel from "./GlassPanel";
 
 type TimeAnalyticsViewProps = {
   decks: Deck[];
@@ -12,6 +14,7 @@ type TimeAnalyticsViewProps = {
 
 const LOCALE_BY_LANGUAGE: Record<Language, string> = {
   es: "es-ES",
+  fr: "fr-FR",
   en: "en-US",
   de: "de-DE",
   ja: "ja-JP",
@@ -31,7 +34,7 @@ function buildWeeklySeries(
   language: Language,
 ): { label: string; seconds: number }[] {
   const today = new Date();
-  const locale = LOCALE_BY_LANGUAGE[language];
+  const locale = LOCALE_BY_LANGUAGE[language] ?? LOCALE_BY_LANGUAGE.es;
 
   return WEEKLY_WEIGHTS.map((weight, index) => {
     const dayOffset = WEEKLY_WEIGHTS.length - 1 - index;
@@ -70,12 +73,15 @@ function estimateDeckSeconds(deckId: string, totalSeconds: number): number {
  */
 export default function TimeAnalyticsView({ decks, globalTime }: TimeAnalyticsViewProps) {
   const { dict, language } = useLanguage();
-  const weeklySeries = buildWeeklySeries(globalTime, language);
+  // Cold start / valores corruptos → 0h visibles, nunca NaN en barras.
+  const safeGlobalTime =
+    Number.isFinite(globalTime) && globalTime > 0 ? globalTime : 0;
+  const weeklySeries = buildWeeklySeries(safeGlobalTime, language);
   const maxWeeklySeconds = Math.max(...weeklySeries.map((day) => day.seconds), 1);
 
   const deckTimes = decks.map((deck) => ({
     deck,
-    seconds: estimateDeckSeconds(deck.id, globalTime),
+    seconds: estimateDeckSeconds(deck.id, safeGlobalTime),
   }));
   const maxDeckSeconds = Math.max(...deckTimes.map((entry) => entry.seconds), 1);
 
@@ -88,7 +94,7 @@ export default function TimeAnalyticsView({ decks, globalTime }: TimeAnalyticsVi
         </h3>
 
         <p className="mt-3 text-4xl font-bold tracking-tight tabular-nums text-foreground md:text-5xl">
-          {formatGlobalTime(globalTime)}
+          {formatGlobalTime(safeGlobalTime)}
         </p>
         <p className="mt-2 text-sm text-secondary-foreground">
           {dict.timeAnalytics.totalTimeCaption}
@@ -139,20 +145,18 @@ export default function TimeAnalyticsView({ decks, globalTime }: TimeAnalyticsVi
       </section>
 
       {/* ── Tiempo por Mazo ── */}
-      <section>
-        <h3 className="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
-          {dict.timeAnalytics.perDeckTitle}
-        </h3>
+      <section className="flex flex-col gap-3">
+        <GlassPanel className="px-4 py-3">
+          <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            {dict.timeAnalytics.perDeckTitle}
+          </h3>
+        </GlassPanel>
 
         {deckTimes.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-              <Layers className="h-5 w-5" strokeWidth={1.75} />
-            </div>
-            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              {dict.timeAnalytics.perDeckEmptyState}
-            </p>
-          </div>
+          <EmptyStatePanel
+            icon={<Layers className="h-5 w-5" strokeWidth={1.75} />}
+            description={dict.timeAnalytics.perDeckEmptyState}
+          />
         ) : (
           <div className="flex flex-col gap-3">
             {deckTimes.map(({ deck, seconds }) => {

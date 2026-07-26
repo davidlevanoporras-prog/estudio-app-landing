@@ -65,10 +65,14 @@ export function saveGlobalTimer(elapsedSeconds: number, isPaused: boolean): void
 
 /** `HH:MM:SS` — formato de cronómetro de largo aliento, siempre con horas visibles. */
 export function formatGlobalTime(totalSeconds: number): string {
+  const safe =
+    Number.isFinite(totalSeconds) && totalSeconds > 0
+      ? Math.floor(totalSeconds)
+      : 0;
   const pad = (value: number) => String(value).padStart(2, "0");
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
+  const seconds = safe % 60;
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
@@ -98,12 +102,16 @@ export function formatDurationHuman(
   totalSeconds: number,
   labels: DurationLabels = DEFAULT_DURATION_LABELS,
 ): string {
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const safe =
+    Number.isFinite(totalSeconds) && totalSeconds > 0
+      ? Math.floor(totalSeconds)
+      : 0;
+  const hours = Math.floor(safe / 3600);
+  const minutes = Math.floor((safe % 3600) / 60);
 
   if (hours > 0) {
     return fillDuration(labels.hoursMinutes, { h: hours, m: minutes });
   }
   if (minutes > 0) return fillDuration(labels.minutes, { m: minutes });
-  return fillDuration(labels.seconds, { s: totalSeconds });
+  return fillDuration(labels.seconds, { s: safe });
 }

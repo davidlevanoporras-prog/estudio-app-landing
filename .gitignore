@@ -2,3 +2,8 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# Never ship installer binaries inside the Vite public tree (inflates Tauri bundles).
+public/*.dmg
+public/*.exe
+public/*.app

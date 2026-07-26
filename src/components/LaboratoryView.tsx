@@ -19,6 +19,7 @@ import {
 } from "../store/themeStore";
 import type { Deck } from "../types/deck";
 import { DEFAULT_EASE_FACTOR, isCardDue } from "../utils/spacedRepetition";
+import GlassPanel from "./GlassPanel";
 import InfoTooltip from "./InfoTooltip";
 
 type LaboratoryViewProps = {
@@ -28,13 +29,21 @@ type LaboratoryViewProps = {
 /** Acento de marca — invariante en claro/oscuro. */
 const AMBER = "#f3b36b";
 
-/** Sin fallbacks inventados — vault vacío = métricas nulas / cero. */
+/**
+ * Cold start seguro: sin historial → 0 / DEFAULT_EASE_FACTOR (nunca NaN ni null en UI).
+ * La curva de olvido solo se dibuja con al menos una revisión real.
+ */
 type LabMetrics = {
   cognitiveLoad: number;
-  retentionIndex: number | null;
-  synapticStability: number | null;
-  hasHistory: boolean;
+  retentionIndex: number;
+  synapticStability: number;
+  totalReviews: number;
+  hasReviewHistory: boolean;
 };
+
+function safeNumber(value: number, fallback = 0): number {
+  return Number.isFinite(value) ? value : fallback;
+}
 
 function computeLabMetrics(decks: Deck[], stats: StudyStats): LabMetrics {
   const allCards = decks.flatMap((deck) => deck.cards);
@@ -45,29 +54,31 @@ function computeLabMetrics(decks: Deck[], stats: StudyStats): LabMetrics {
       : 0;
 
   const { again, hard, good, easy } = stats.global;
-  const totalReviews = again + hard + good + easy;
+  const totalReviews = safeNumber(again + hard + good + easy);
   const retentionIndex =
     totalReviews > 0
       ? Math.round(((good + easy) / totalReviews) * 100)
-      : null;
+      : 0;
 
   const synapticStability =
     allCards.length > 0
       ? Math.round(
           (allCards.reduce(
-            (sum, card) => sum + (card.easeFactor ?? DEFAULT_EASE_FACTOR),
+            (sum, card) =>
+              sum + safeNumber(card.easeFactor ?? DEFAULT_EASE_FACTOR, DEFAULT_EASE_FACTOR),
             0,
           ) /
             allCards.length) *
             100,
         ) / 100
-      : null;
+      : DEFAULT_EASE_FACTOR;
 
   return {
-    cognitiveLoad,
-    retentionIndex,
-    synapticStability,
-    hasHistory: totalReviews > 0 || allCards.length > 0,
+    cognitiveLoad: safeNumber(cognitiveLoad),
+    retentionIndex: safeNumber(retentionIndex),
+    synapticStability: safeNumber(synapticStability, DEFAULT_EASE_FACTOR),
+    totalReviews,
+    hasReviewHistory: totalReviews > 0,
   };
 }
 
@@ -122,26 +133,26 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
 
   const metrics = useMemo(() => computeLabMetrics(decks, stats), [decks, stats]);
   const curveData = useMemo(() => {
-    if (
-      metrics.retentionIndex === null ||
-      metrics.synapticStability === null
-    ) {
-      return [];
-    }
+    if (!metrics.hasReviewHistory) return [];
     return buildForgettingCurve(
       metrics.retentionIndex,
       metrics.synapticStability,
     );
-  }, [metrics.retentionIndex, metrics.synapticStability]);
+  }, [
+    metrics.hasReviewHistory,
+    metrics.retentionIndex,
+    metrics.synapticStability,
+  ]);
 
-  const showEmptyCurve = !metrics.hasHistory;
+  // Evita Recharts con `data=[]` (cold start / mazos sin reviews → gráfica rota).
+  const showEmptyCurve = !metrics.hasReviewHistory || curveData.length === 0;
 
   const axisMute = isDark ? "rgba(229,231,235,0.4)" : "rgba(24,24,27,0.45)";
   const axisLine = isDark ? "rgba(229,231,235,0.1)" : "rgba(24,24,27,0.12)";
   const gridStroke = isDark ? "rgba(255,255,255,0.05)" : "rgba(0,0,0,0.06)";
 
   return (
-    <div className="flex flex-col gap-6 rounded-xl border border-card-rest bg-background p-6 shadow-sm sm:p-8">
+    <GlassPanel className="flex flex-col gap-6 p-6 sm:p-8">
       <header>
         <p className="text-[11px] font-medium tracking-[0.22em] text-muted-foreground uppercase">
           {dict.laboratory.subtitle}
@@ -161,29 +172,21 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
         <MetricCard
           icon={Target}
           label={dict.laboratory.retentionIndexLabel}
-          value={
-            metrics.retentionIndex === null
-              ? "—"
-              : `${metrics.retentionIndex}%`
-          }
+          value={`${metrics.retentionIndex}%`}
           detail={
-            metrics.retentionIndex === null
-              ? dict.emptyStates.noMetrics
-              : dict.laboratory.retentionIndexDetail
+            metrics.hasReviewHistory
+              ? dict.laboratory.retentionIndexDetail
+              : dict.emptyStates.noMetrics
           }
         />
         <MetricCard
           icon={Activity}
           label={dict.laboratory.synapticStabilityLabel}
-          value={
-            metrics.synapticStability === null
-              ? "—"
-              : metrics.synapticStability.toFixed(2)
-          }
+          value={metrics.synapticStability.toFixed(2)}
           detail={
-            metrics.synapticStability === null
-              ? dict.emptyStates.noMetrics
-              : dict.laboratory.synapticStabilityDetail
+            metrics.hasReviewHistory || decks.some((d) => d.cards.length > 0)
+              ? dict.laboratory.synapticStabilityDetail
+              : dict.emptyStates.noMetrics
           }
         />
       </section>
@@ -273,7 +276,7 @@ export default function LaboratoryView({ decks }: LaboratoryViewProps) {
           </div>
         )}
       </section>
-    </div>
+    </GlassPanel>
   );
 }
 

@@ -31,7 +31,11 @@ import {
 } from "../lib/nativeFiles";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useConfirm } from "./ConfirmProvider";
+import EmptyStatePanel from "./EmptyStatePanel";
+import GlassPanel from "./GlassPanel";
 import { PortalMenu } from "./PortalMenu";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 
 /**
  * Gestor de Fuentes — 100% local, sin servidor ni nube.
@@ -447,7 +451,10 @@ export default function SourcesView() {
     fileInputRef.current?.click();
   };
 
-  /** Abre el visor integrado — prioriza la ruta nativa para `convertFileSrc`. */
+  /**
+   * Visor desde blob IndexedDB (no depende de scopes FS/asset tras reinicio).
+   * Las rutas nativas solo quedan en scope la sesión en que el diálogo las autorizó.
+   */
   const handleOpenPdf = (file: SourceFile) => {
     if (!isPdfSource(file)) return;
 
@@ -455,12 +462,7 @@ export default function SourcesView() {
       URL.revokeObjectURL(selectedPdf);
     }
 
-    if (file.path) {
-      setSelectedPdf(file.path);
-    } else {
-      // Respaldo web / entradas sin path: Object URL del blob en IndexedDB.
-      setSelectedPdf(URL.createObjectURL(file.blob));
-    }
+    setSelectedPdf(URL.createObjectURL(file.blob));
     setSelectedPdfName(file.name);
   };
 
@@ -497,57 +499,66 @@ export default function SourcesView() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary">
-            <Library className="h-5 w-5" strokeWidth={2} />
+    <ViewShell
+      header={
+        <div className="flex flex-col gap-4">
+          <ViewHeaderCard>
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary">
+                  <Library className="h-5 w-5" strokeWidth={2} />
+                </div>
+                <h2 className="sources-title text-xl font-semibold tracking-tight text-foreground">
+                  {dict.sources.title}
+                </h2>
+              </div>
+
+              {!activeFolder && (
+                <button
+                  type="button"
+                  onClick={handleCreateFolder}
+                  className="sources-new-folder-btn premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
+                >
+                  <FolderPlus className="h-4 w-4" strokeWidth={2.5} />
+                  {dict.sources.newFolder}
+                </button>
+              )}
+            </div>
+          </ViewHeaderCard>
+
+          <div className="sources-search-bar glow-card flex items-center gap-2.5 px-4 py-2.5 transition-all duration-300">
+            <Search
+              className="h-4 w-4 shrink-0 text-icon-muted"
+              strokeWidth={2}
+            />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder={dict.sources.searchPlaceholder}
+              className="min-w-0 flex-1 rounded-md bg-transparent py-0.5 text-sm text-foreground outline-none transition-colors duration-300 placeholder:text-muted-foreground"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery("")}
+                aria-label={dict.sources.clearSearch}
+                title={dict.sources.clearSearch}
+                className="premium-btn flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
+              >
+                <X className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            )}
           </div>
-          <h2 className="sources-title text-xl font-semibold tracking-tight text-foreground">
-            {dict.sources.title}
-          </h2>
         </div>
-
-        {!activeFolder && (
-          <button
-            type="button"
-            onClick={handleCreateFolder}
-            className="sources-new-folder-btn premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
-          >
-            <FolderPlus className="h-4 w-4" strokeWidth={2.5} />
-            {dict.sources.newFolder}
-          </button>
-        )}
-      </div>
-
-      {/* ── Misión 4: buscador instantáneo, estilo Google ── */}
-      <div className="sources-search-bar glow-card flex items-center gap-2.5 px-4 py-2.5 transition-all duration-300">
-        <Search className="h-4 w-4 shrink-0 text-icon-muted" strokeWidth={2} />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(event) => setSearchQuery(event.target.value)}
-          placeholder={dict.sources.searchPlaceholder}
-          className="min-w-0 flex-1 rounded-md bg-transparent py-0.5 text-sm text-foreground outline-none transition-colors duration-300 placeholder:text-muted-foreground"
-        />
-        {searchQuery && (
-          <button
-            type="button"
-            onClick={() => setSearchQuery("")}
-            aria-label={dict.sources.clearSearch}
-            title={dict.sources.clearSearch}
-            className="premium-btn flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
-          >
-            <X className="h-3.5 w-3.5" strokeWidth={2} />
-          </button>
-        )}
-      </div>
-
+      }
+      bodyClassName="pb-4"
+    >
       {isLoading ? (
-        <div className="flex flex-col items-center justify-center gap-3 py-24 text-center">
+        <GlassPanel className="flex flex-col items-center justify-center gap-3 py-24 text-center">
           <div className="h-8 w-8 animate-pulse rounded-full border-2 border-primary/40 border-t-primary" />
           <p className="text-sm text-muted-foreground">{dict.sources.loadingVault}</p>
-        </div>
+        </GlassPanel>
       ) : (
         <div
           className={[
@@ -614,7 +625,7 @@ export default function SourcesView() {
           onClose={handleClosePdf}
         />
       )}
-    </div>
+    </ViewShell>
   );
 }
 
@@ -717,22 +728,21 @@ function FolderGridView({
   const { dict } = useLanguage();
   if (folders.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-dashed border-card-rest py-24 text-center">
-        <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-          <FolderPlus className="h-6 w-6" strokeWidth={1.75} />
-        </div>
-        <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-          {dict.sources.emptyVault}
-        </p>
-        <button
-          type="button"
-          onClick={onCreateFolder}
+      <EmptyStatePanel
+        className="py-24"
+        icon={<FolderPlus className="h-6 w-6" strokeWidth={1.75} />}
+        description={dict.sources.emptyVault}
+        action={
+          <button
+            type="button"
+            onClick={onCreateFolder}
             className="sources-new-folder-btn premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
           >
             <FolderPlus className="h-4 w-4" strokeWidth={2.5} />
             {dict.sources.createFolder}
-        </button>
-      </div>
+          </button>
+        }
+      />
     );
   }
 
@@ -968,7 +978,7 @@ function FolderDetailView({
       : dict.sources.fileCountMany.replace("{{count}}", String(count));
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <GlassPanel className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -999,17 +1009,13 @@ function FolderDetailView({
           <Upload className="h-4 w-4" strokeWidth={2.5} />
           {dict.sources.addFile}
         </button>
-      </div>
+      </GlassPanel>
 
       {files.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-            <Upload className="h-5 w-5" strokeWidth={1.75} />
-          </div>
-          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            {dict.sources.emptyFolder}
-          </p>
-        </div>
+        <EmptyStatePanel
+          icon={<Upload className="h-5 w-5" strokeWidth={1.75} />}
+          description={dict.sources.emptyFolder}
+        />
       ) : (
         <div className="glow-card flex flex-col divide-y divide-wenge-border-subtle p-2">
           {files.map((file) => (
@@ -1135,14 +1141,10 @@ function SearchResultsView({
   const { dict } = useLanguage();
   if (results.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-          <Search className="h-5 w-5" strokeWidth={1.75} />
-        </div>
-        <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-          {dict.sources.noResultsFor.replace("{{query}}", query)}
-        </p>
-      </div>
+      <EmptyStatePanel
+        icon={<Search className="h-5 w-5" strokeWidth={1.75} />}
+        description={dict.sources.noResultsFor.replace("{{query}}", query)}
+      />
     );
   }
 

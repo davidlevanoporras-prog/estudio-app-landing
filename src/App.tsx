@@ -2,10 +2,10 @@ import { useEffect, useState } from "react";
 import { isTauri } from "@tauri-apps/api/core";
 import DashboardLayout from "./components/DashboardLayout";
 import OnboardingView from "./components/OnboardingView";
-import PrivacyOnboarding, {
+import PrivacyOnboardingModal, {
   persistPrivacyAccepted,
   readPrivacyAccepted,
-} from "./components/PrivacyOnboarding";
+} from "./components/PrivacyOnboardingModal";
 import SplashScreenView from "./components/SplashScreenView";
 import { useAppStore } from "./hooks/useAppStore";
 import { VAULT_KEYS } from "./lib/vaultKeys";
@@ -42,6 +42,8 @@ function DesktopApp() {
     void loadTheme();
   }, [loadTheme]);
 
+  // TODO(unify-vault): flashcardStore solo marca boot ready + canal
+  // secundario (`excellence_vault.json`). Mazos UI = deckStore / app_data.dat.
   useEffect(() => {
     void useFlashcardStore.getState().initStore();
   }, []);
@@ -77,7 +79,7 @@ function DesktopApp() {
   }
 
   if (!privacyAccepted) {
-    return <PrivacyOnboarding onAccept={handlePrivacyAccept} />;
+    return <PrivacyOnboardingModal onAccept={handlePrivacyAccept} />;
   }
 
   if (hasUserName) {

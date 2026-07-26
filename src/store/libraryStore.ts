@@ -70,6 +70,9 @@ interface LibraryStoreState {
     patch: Partial<Omit<ClozeCard, "id">>,
   ) => void;
   deleteCard: (deckId: string, cardId: string) => void;
+
+  /** Inyecta mazos importados (`.easim.json`) en la raíz de la biblioteca. */
+  importDecks: (decks: SimulationDeck[]) => string[];
 }
 
 const initial = loadSnapshot();
@@ -198,5 +201,18 @@ export const useLibraryStore = create<LibraryStoreState>((set, get) => ({
     );
     set({ decks });
     persistSnapshot(get().folders, decks);
+  },
+
+  importDecks: (incoming) => {
+    if (incoming.length === 0) return [];
+    const stamped = incoming.map((deck) => ({
+      ...deck,
+      folderId: null as string | null,
+      cards: deck.cards.map((card) => ({ ...card })),
+    }));
+    const decks = [...get().decks, ...stamped];
+    set({ decks });
+    persistSnapshot(get().folders, decks);
+    return stamped.map((d) => d.id);
   },
 }));

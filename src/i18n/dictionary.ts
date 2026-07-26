@@ -1,5 +1,5 @@
-/** ISO 639-1 — las 5 abreviaturas del selector de idiomas son inmutables y NUNCA se traducen. */
-export type Language = "es" | "en" | "de" | "ja" | "ko";
+/** ISO 639-1 — las abreviaturas del selector de idiomas son inmutables y NUNCA se traducen. */
+export type Language = "es" | "fr" | "en" | "de" | "ja" | "ko";
 
 /** Clave compartida entre LanguageContext y react-i18next. */
 export const LANGUAGE_STORAGE_KEY = "estudio-language";
@@ -34,6 +34,8 @@ export type Dictionary = {
     challenges: string;
     simulator: string;
     assistant: string;
+    profile: string;
+    more: string;
   };
   greeting: {
     morning: string;
@@ -48,13 +50,12 @@ export type Dictionary = {
   };
   privacyOnboarding: {
     title: string;
-    subtitle: string;
-    vaultTitle: string;
-    vaultBody: string;
-    privacyTitle: string;
-    privacyBody: string;
-    permissionTitle: string;
-    permissionBody: string;
+    intro: string;
+    photosTitle: string;
+    photosBody: string;
+    storageTitle: string;
+    storageBody: string;
+    privacyNote: string;
     cta: string;
   };
   header: {
@@ -95,9 +96,22 @@ export type Dictionary = {
     codeLabel: string;
     copyLabel: string;
     copiedLabel: string;
+    /** Sección IAP — Tienda de Estudio (temas visuales). */
+    storeSectionLabel: string;
+    storeProductTitle: string;
+    storeProductDescription: string;
+    unlockThemesCta: string;
+    /** Exacto en ES: «Restaurar Compras» (App Store). */
+    restorePurchasesCta: string;
+    themesUnlockedBadge: string;
+    storeBusyLabel: string;
+    restoreEmptyMessage: string;
+    purchaseErrorMessage: string;
+    /** @deprecated — conservar claves por compatibilidad de JSON. */
     subscriptionLabel: string;
     currentPlanLabel: string;
-    plans: { basic: string; pro: string };
+    plans: { basic: string; pro: string; excellence: string };
+    planBadgeLabel: string;
     upgradeCta: string;
     manageCta: string;
     saveLabel: string;
@@ -116,13 +130,6 @@ export type Dictionary = {
     saveCredentialLabel: string;
     credentialSavedLabel: string;
     credentialsDisclaimer: string;
-    licenseSection: string;
-    licenseCodeLabel: string;
-    licenseCodePlaceholder: string;
-    licenseRedeemLabel: string;
-    licenseVipToast: string;
-    licenseActiveLabel: string;
-    licenseInvalidLabel: string;
     credentialsLockedLabel: string;
   };
   paywall: {
@@ -141,9 +148,34 @@ export type Dictionary = {
     modeGroupLabel: string;
     modeOptions: { light: string; dark: string; system: string };
   };
+  librarySearch: {
+    placeholder: string;
+    label: string;
+    noResults: string;
+    clearFilter: string;
+  };
   flashcards: {
     heading: string;
     createDeck: string;
+    importAnki: string;
+    importAnkiLoading: string;
+    importAnkiSuccess: string;
+    importAnkiEmpty: string;
+    importAnkiError: string;
+    importModalTitle: string;
+    importModalSubtitle: string;
+    importDeckNameLabel: string;
+    importPasteLabel: string;
+    importPastePlaceholder: string;
+    importFileLabel: string;
+    importFileButton: string;
+    importConfirmButton: string;
+    importAnkiHelpLink: string;
+    importAnkiHelpTitle: string;
+    importAnkiHelpStep1Label: string;
+    importAnkiHelpStep1Body: string;
+    importAnkiHelpStep2Label: string;
+    importAnkiHelpStep2Body: string;
     emptyState: string;
     newDeckName: string;
     editHint: string;
@@ -351,6 +383,22 @@ export type Dictionary = {
     distractors: string;
     falseOption: string;
     saveCard: string;
+    exportButton: string;
+    exportModalTitle: string;
+    exportModalSubtitle: string;
+    exportSelectAll: string;
+    exportDeselectAll: string;
+    exportSelectedCount: string;
+    exportDeckMeta: string;
+    exportConfirm: string;
+    exportBusy: string;
+    exportNoDecks: string;
+    exportEmptySelection: string;
+    exportError: string;
+    importButton: string;
+    importDropHint: string;
+    importSuccess: string;
+    importInvalidFormat: string;
   };
   sources: {
     title: string;
@@ -411,11 +459,13 @@ export type Dictionary = {
 import de from "../../locales/de.json" with { type: "json" };
 import en from "../../locales/en.json" with { type: "json" };
 import es from "../../locales/es.json" with { type: "json" };
+import fr from "../../locales/fr.json" with { type: "json" };
 import ja from "../../locales/ja.json" with { type: "json" };
 import ko from "../../locales/ko.json" with { type: "json" };
 
 export const translations: Record<Language, Dictionary> = {
   es: es as Dictionary,
+  fr: fr as Dictionary,
   en: en as Dictionary,
   de: de as Dictionary,
   ja: ja as Dictionary,
@@ -423,11 +473,13 @@ export const translations: Record<Language, Dictionary> = {
 };
 
 /**
- * "Estándar de Oro" ISO 639-1: estas 5 abreviaturas son universales e
- * INMUTABLES — el `label` NUNCA se traduce ni cambia con el idioma activo.
+ * "Estándar de Oro" ISO 639-1: abreviaturas universales e INMUTABLES —
+ * el `label` NUNCA se traduce ni cambia con el idioma activo.
+ * Orden visual: ES, FR, EN, DE, JA, KO.
  */
 export const languageOptions: { id: Language; label: string }[] = [
   { id: "es", label: "ES" },
+  { id: "fr", label: "FR" },
   { id: "en", label: "EN" },
   { id: "de", label: "DE" },
   { id: "ja", label: "JA" },

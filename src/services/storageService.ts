@@ -8,7 +8,11 @@ import {
 } from "@tauri-apps/plugin-fs";
 import type { Deck, Flashcard } from "../types/schema";
 
-/** Archivo maestro de la bóveda local (AppData). */
+/**
+ * Archivo maestro de la bóveda secundaria (AppData).
+ * TODO(unify-vault): distinto de `app_data.dat` (`lib/appStore.ts` / deckStore).
+ * No compartir clave ni path con la UI principal hasta la migración.
+ */
 export const VAULT_FILE_NAME = "excellence_vault.json";
 
 /**

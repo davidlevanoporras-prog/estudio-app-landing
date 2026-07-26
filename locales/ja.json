@@ -7,7 +7,7 @@
     "deleteAction": "削除"
   },
   "sidebar": {
-    "brand": "Estudio",
+    "brand": "学習",
     "tagline": "アドバンストパネル",
     "planLabel": "現在のプラン",
     "planValue": "Pro",
@@ -23,7 +23,9 @@
     "sources": "ソース",
     "challenges": "チャレンジ",
     "simulator": "シミュレーター",
-    "assistant": "アシスタント"
+    "assistant": "アシスタント",
+    "profile": "プロフィール",
+    "more": "その他"
   },
   "greeting": {
     "morning": "おはようございます",
@@ -37,15 +39,14 @@
     "cta": "はじめる"
   },
   "privacyOnboarding": {
-    "title": "🛡️ 絶対的なプライバシーと自律",
-    "subtitle": "アーキテクチャは私たちが設計し、コントロールはすべてあなたに。",
-    "vaultTitle": "主権",
-    "vaultBody": "情報の唯一の所有者はあなたです。デッキと進捗は端末と個人クラウド（iCloud/Drive）に保存されます。保管庫はあなたのものです。",
-    "privacyTitle": "プライバシー",
-    "privacyBody": "追跡なしのプライバシーを保証します。指標の分析やバックグラウンドでのデータ収集は行いません。学習はプライベートです。",
-    "permissionTitle": "同期",
-    "permissionBody": "透明な同期。アプリがファイル許可を求めるのは、ローカル進捗を安全に保存するためだけです。",
-    "cta": "理解して同意する"
+    "title": "Excellence Absolue へようこそ",
+    "intro": "スムーズでパーソナライズされた体験のため、アプリは次へのアクセスを必要とします：",
+    "photosTitle": "フォトライブラリ / 画像",
+    "photosBody": "プロフィール写真とビジュアル環境をカスタマイズするためのギャラリーへのアクセス。",
+    "storageTitle": "ローカルファイルストレージ",
+    "storageBody": "PDF や学習デッキをインポート・読み取り・処理するためのドキュメントへのアクセス。",
+    "privacyNote": "ファイルとデータはこの端末で 100% ローカルに処理・保存されます。外部サーバーへ情報が送信されることはありません。",
+    "cta": "理解して続行"
   },
   "header": {
     "welcomeBack": "ようこそ、{{name}}さん",
@@ -95,20 +96,31 @@
     "codeLabel": "ユーザーコード",
     "copyLabel": "クリップボードにコピー",
     "copiedLabel": "コピーしました！",
-    "subscriptionLabel": "サブスクリプション",
-    "currentPlanLabel": "現在のプラン",
+    "storeSectionLabel": "スタディストア",
+    "storeProductTitle": "プレミアムテーマ",
+    "storeProductDescription": "ショールームの写真環境を買い切りで解除します。",
+    "unlockThemesCta": "プレミアムテーマを解除",
+    "restorePurchasesCta": "購入を復元",
+    "themesUnlockedBadge": "プレミアムテーマ解除済み",
+    "storeBusyLabel": "処理中…",
+    "restoreEmptyMessage": "復元できる以前の購入は見つかりませんでした。",
+    "purchaseErrorMessage": "購入を完了できませんでした。もう一度お試しください。",
+    "subscriptionLabel": "スタディストア",
+    "currentPlanLabel": "製品",
     "plans": {
-      "basic": "ベーシック",
-      "pro": "Pro"
+      "basic": "スタンダード",
+      "pro": "プレミアムテーマ",
+      "excellence": "Excellence"
     },
-    "upgradeCta": "Proにアップグレード",
-    "manageCta": "サブスクリプションを管理",
+    "planBadgeLabel": "スタンダード版",
+    "upgradeCta": "プレミアムテーマを解除",
+    "manageCta": "購入を復元",
     "saveLabel": "変更を保存",
     "preferencesSection": "インターフェース設定",
     "languageLabel": "言語",
     "accentColorLabel": "アクセントカラー",
-    "accentColorDescription": "インターフェース全体のアクセントをカスタマイズするための自由な色を選択してください。",
-    "accentColorResetLabel": "テーマの色にリセット",
+    "accentColorDescription": "この色はアクティブなテーマにのみ保存されます。各環境に独自のアクセントを設定できます。",
+    "accentColorResetLabel": "デフォルトの色にリセット",
     "changePhotoLabel": "写真を変更",
     "uiSpeedLabel": "インターフェース速度",
     "uiSpeedOptions": {
@@ -123,20 +135,13 @@
     "saveCredentialLabel": "認証情報を保存",
     "credentialSavedLabel": "認証情報を保管庫に保存しました",
     "credentialsDisclaimer": "高度な処理にはご自身の認証情報が必要です。キーはローカルに保存され、共有されることはありません。",
-    "licenseSection": "利用ライセンス",
-    "licenseCodeLabel": "ライセンスコード",
-    "licenseCodePlaceholder": "XXXX-XXXX",
-    "licenseRedeemLabel": "引き換え",
-    "licenseVipToast": "VIPアクセスを付与しました。ようこそ、アーキテクト。",
-    "licenseActiveLabel": "Proライセンス有効",
-    "licenseInvalidLabel": "無効なコード",
-    "credentialsLockedLabel": "パーソナライズされた知能エンジンはProユーザー限定です。"
+    "credentialsLockedLabel": "プレミアムテーマ解除後に利用できます。"
   },
   "paywall": {
-    "title": "機能がロックされています",
-    "navLockedMessage": "機能がロックされています。高度な推論と地図機能にはProライセンスが必要です。",
+    "title": "テーマがロックされています",
+    "navLockedMessage": "この環境を使うには、スタディストアでプレミアムテーマを解除してください。",
     "dismissLabel": "了解",
-    "themeLockedLabel": "Pro限定"
+    "themeLockedLabel": "プレミアムテーマ"
   },
   "themeView": {
     "backLabel": "プロフィールに戻る",
@@ -152,9 +157,34 @@
       "system": "自動"
     }
   },
+  "librarySearch": {
+    "placeholder": "デッキ・タグを検索…",
+    "label": "ライブラリを検索",
+    "noResults": "「{{query}}」に一致するデッキがありません",
+    "clearFilter": "フィルターをクリア"
+  },
   "flashcards": {
     "heading": "マイデッキ",
     "createDeck": "デッキを作成",
+    "importAnki": "デッキを読み込む",
+    "importAnkiLoading": "カードをインポート中…",
+    "importAnkiSuccess": "デッキのインポートが完了しました",
+    "importAnkiEmpty": "インポート可能なカードがありません。",
+    "importAnkiError": "テキストまたはファイルをインポートできませんでした。",
+    "importModalTitle": "カードをインポート（テキスト / CSV）",
+    "importModalSubtitle": "表/裏をタブ・カンマ・| で区切って貼り付けるか、.txt / .csv をアップロードします。",
+    "importDeckNameLabel": "デッキ名",
+    "importPasteLabel": "テキストを貼り付け",
+    "importPastePlaceholder": "質問1\t答え1\n質問2 | 答え2\n質問3, 答え3",
+    "importFileLabel": "またはファイルをアップロード",
+    "importFileButton": ".txt / .csv / .tsv を選択",
+    "importConfirmButton": "デッキをインポート",
+    "importAnkiHelpLink": "Ankiからデッキを書き出すには？",
+    "importAnkiHelpTitle": "かんたんガイド Anki → テキスト",
+    "importAnkiHelpStep1Label": "Anki で",
+    "importAnkiHelpStep1Body": "ファイル ➔ エクスポート ➔「タブ区切りテキストのノート (.txt)」を選びます。",
+    "importAnkiHelpStep2Label": "Excellence で",
+    "importAnkiHelpStep2Body": "生成された .txt をアップロードするか、下の枠にテキストを貼り付けます。",
     "emptyState": "知識の保管庫が空です。デッキを作成して始めましょう。",
     "newDeckName": "新しいデッキ",
     "editHint": "デッキ名を編集",
@@ -361,7 +391,23 @@
     "previewEmpty": "答えを[[二重ブラケット]]で囲むと空白が表示されます。",
     "distractors": "誤答",
     "falseOption": "偽の選択肢 {{n}}",
-    "saveCard": "カードを保存"
+    "saveCard": "カードを保存",
+    "exportButton": "エクスポート",
+    "exportModalTitle": "デッキをパッケージ",
+    "exportModalSubtitle": ".easim.json ファイルに含めるデッキを選択します。",
+    "exportSelectAll": "すべて選択",
+    "exportDeselectAll": "選択を解除",
+    "exportSelectedCount": "{{count}} 件選択中",
+    "exportDeckMeta": "{{count}} 枚 · {{folder}}",
+    "exportConfirm": "パッケージして保存",
+    "exportBusy": "パッケージ中…",
+    "exportNoDecks": "ライブラリにデッキがまだありません。",
+    "exportEmptySelection": "エクスポートするデッキを1つ以上選択してください。",
+    "exportError": "ファイルを保存できませんでした。もう一度お試しください。",
+    "importButton": "デッキをインポート",
+    "importDropHint": ".easim.json をここにドロップ",
+    "importSuccess": "{{count}} 件のデッキをインポートしました。",
+    "importInvalidFormat": "シミュレーター形式を認識できません"
   },
   "sources": {
     "title": "ソース",
@@ -405,10 +451,10 @@
     "seconds": "{{s}}秒"
   },
   "profileDev": {
-    "toolsTitle": "開発者ツール",
-    "toolsBody": "localStorage、メディア IndexedDB を消去してアプリを再読み込みします。この端末では元に戻せません。",
+    "toolsTitle": "データとプライバシー",
+    "toolsBody": "データはこの端末に 100% ローカル保存されます。いつでもアプリをリセットし、保存したファイルと設定を削除できます。",
     "resetConfirm": "すべてのローカルデータを削除して再読み込みしますか？この操作は取り消せません。",
-    "resetButton": "すべてのデータを消去 (Reset)"
+    "resetButton": "ローカルデータを消去"
   },
   "emptyStates": {
     "noDecks": "まだデッキがありません。",

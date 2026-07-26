@@ -22,7 +22,11 @@ import type { Dictionary, Language } from "../i18n/dictionary";
 import { useLanguage } from "../i18n/LanguageContext";
 import { getSecureJSON, setSecureJSON } from "../lib/secureStorage";
 import { useConfirm } from "./ConfirmProvider";
+import EmptyStatePanel from "./EmptyStatePanel";
+import GlassPanel from "./GlassPanel";
 import { PortalMenu } from "./PortalMenu";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 
 /** Cadencia de recurrencia de un desafío — `"none"` es el valor por defecto (sin repetición). */
 export type Recurrence = "none" | "daily" | "weekly" | "monthly" | "yearly";
@@ -231,6 +235,7 @@ function toggleArrayValue(values: number[], value: number): number[] {
 
 const localeByLanguage: Record<Language, string> = {
   es: "es-ES",
+  fr: "fr-FR",
   en: "en-US",
   de: "de-DE",
   ja: "ja-JP",
@@ -272,6 +277,14 @@ const datePopoverTextByLanguage: Record<
     dailyMessage: "El desafío se repetirá todos los días.",
     prevMonthLabel: "Mes anterior",
     nextMonthLabel: "Mes siguiente",
+  },
+  fr: {
+    trigger: "Date et répétition",
+    weeklyPanelLabel: "Choisissez les jours de la semaine",
+    monthlyPanelLabel: "Choisissez les jours du mois",
+    dailyMessage: "Le défi se répétera tous les jours.",
+    prevMonthLabel: "Mois précédent",
+    nextMonthLabel: "Mois suivant",
   },
   en: {
     trigger: "Date and repeat",
@@ -315,6 +328,13 @@ const recurrenceLabelsByLanguage: Record<Language, Record<Recurrence, string>> =
     monthly: "Mensual",
     yearly: "Anual",
   },
+  fr: {
+    none: "Ne pas répéter",
+    daily: "Quotidienne",
+    weekly: "Hebdomadaire",
+    monthly: "Mensuelle",
+    yearly: "Annuelle",
+  },
   en: {
     none: "Don't repeat",
     daily: "Daily",
@@ -348,10 +368,13 @@ const recurrenceLabelsByLanguage: Record<Language, Record<Recurrence, string>> =
 /** "16 jul" — fecha corta para fechas que no son ni hoy ni mañana. */
 function formatShortDate(isoDate: string, language: Language): string {
   const target = new Date(`${isoDate}T00:00:00`);
-  return new Intl.DateTimeFormat(localeByLanguage[language], {
-    day: "numeric",
-    month: "short",
-  }).format(target);
+  return new Intl.DateTimeFormat(
+    localeByLanguage[language] ?? localeByLanguage.es,
+    {
+      day: "numeric",
+      month: "short",
+    },
+  ).format(target);
 }
 
 /** "Hoy" / "Mañana" / fecha corta — usado para la cadencia `"none"`/`"yearly"`, que se rigen por una fecha exacta. */
@@ -381,7 +404,8 @@ function formatTriggerLabel(
   dict: Dictionary,
   language: Language,
 ): string {
-  const recurrenceLabels = recurrenceLabelsByLanguage[language];
+  const recurrenceLabels =
+    recurrenceLabelsByLanguage[language] ?? recurrenceLabelsByLanguage.es;
 
   switch (recurrence) {
     case "daily":
@@ -390,7 +414,7 @@ function formatTriggerLabel(
       if (selectedWeekDays.length === 0) return recurrenceLabels.weekly;
       return [...selectedWeekDays]
         .sort((a, b) => a - b)
-        .map((day) => WEEKDAY_SHORT_LABEL_BY_DAY[day])
+        .map((day) => WEEKDAY_SHORT_LABEL_BY_DAY[day] ?? String(day))
         .join(", ");
     }
     case "monthly": {
@@ -447,9 +471,12 @@ function formatDayLabel(
   tomorrow.setDate(tomorrow.getDate() + 1);
 
   const target = new Date(`${isoDate}T00:00:00`);
-  const weekday = new Intl.DateTimeFormat(localeByLanguage[language], {
-    weekday: "long",
-  }).format(target);
+  const weekday = new Intl.DateTimeFormat(
+    localeByLanguage[language] ?? localeByLanguage.es,
+    {
+      weekday: "long",
+    },
+  ).format(target);
   const capitalizedWeekday = weekday.charAt(0).toUpperCase() + weekday.slice(1);
   const dayNumber = target.getDate();
   const weekdayAndDay = `${capitalizedWeekday} ${dayNumber}`;
@@ -561,67 +588,73 @@ export default function ChallengesView() {
   };
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary">
-          <CalendarCheck className="h-5 w-5" strokeWidth={2} />
+    <ViewShell
+      header={
+        <div className="flex flex-col gap-4">
+          <ViewHeaderCard>
+            <div className="flex items-center gap-3">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary">
+                <CalendarCheck className="h-5 w-5" strokeWidth={2} />
+              </div>
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                {dict.challenges.title}
+              </h2>
+            </div>
+          </ViewHeaderCard>
+
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              handleCreate();
+            }}
+            className="glow-card flex items-center gap-2 p-2.5 transition-all duration-300"
+          >
+            <input
+              type="text"
+              value={draftTitle}
+              onChange={(event) => setDraftTitle(event.target.value)}
+              placeholder={dict.challenges.capturePlaceholder}
+              className="min-w-0 flex-1 rounded-md bg-transparent px-2.5 py-2 text-sm text-foreground outline-none transition-colors duration-300 placeholder:text-muted-foreground"
+            />
+
+            <DatePopover
+              recurrence={draftRecurrence}
+              exactDate={draftExactDate}
+              selectedWeekDays={draftSelectedWeekDays}
+              selectedMonthDays={draftSelectedMonthDays}
+              onRecurrenceChange={setDraftRecurrence}
+              onExactDateChange={setDraftExactDate}
+              onToggleWeekDay={(day) =>
+                setDraftSelectedWeekDays((current) =>
+                  toggleArrayValue(current, day),
+                )
+              }
+              onToggleMonthDay={(day) =>
+                setDraftSelectedMonthDays((current) =>
+                  toggleArrayValue(current, day),
+                )
+              }
+            />
+
+            <button
+              type="submit"
+              disabled={!draftTitle.trim()}
+              aria-label={dict.challenges.addTask}
+              title={dict.challenges.addTask}
+              className="premium-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary/60 bg-primary text-primary-foreground transition-all duration-300 hover:shadow-glow-card disabled:cursor-not-allowed disabled:border-card-rest disabled:bg-transparent disabled:text-icon-muted disabled:opacity-50 disabled:hover:shadow-none"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2.5} />
+            </button>
+          </form>
         </div>
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          {dict.challenges.title}
-        </h2>
-      </div>
-
-      {/* ── Barra de captura rápida (Misión 2): Enter en el título crea la tarea ── */}
-      <form
-        onSubmit={(event) => {
-          event.preventDefault();
-          handleCreate();
-        }}
-        className="glow-card flex items-center gap-2 p-2.5 transition-all duration-300"
-      >
-        <input
-          type="text"
-          value={draftTitle}
-          onChange={(event) => setDraftTitle(event.target.value)}
-          placeholder={dict.challenges.capturePlaceholder}
-          className="min-w-0 flex-1 rounded-md bg-transparent px-2.5 py-2 text-sm text-foreground outline-none transition-colors duration-300 placeholder:text-muted-foreground"
-        />
-
-        <DatePopover
-          recurrence={draftRecurrence}
-          exactDate={draftExactDate}
-          selectedWeekDays={draftSelectedWeekDays}
-          selectedMonthDays={draftSelectedMonthDays}
-          onRecurrenceChange={setDraftRecurrence}
-          onExactDateChange={setDraftExactDate}
-          onToggleWeekDay={(day) =>
-            setDraftSelectedWeekDays((current) => toggleArrayValue(current, day))
-          }
-          onToggleMonthDay={(day) =>
-            setDraftSelectedMonthDays((current) => toggleArrayValue(current, day))
-          }
-        />
-
-        <button
-          type="submit"
-          disabled={!draftTitle.trim()}
-          aria-label={dict.challenges.addTask}
-          title={dict.challenges.addTask}
-          className="premium-btn flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-primary/60 bg-primary text-primary-foreground transition-all duration-300 hover:shadow-glow-card disabled:cursor-not-allowed disabled:border-card-rest disabled:bg-transparent disabled:text-icon-muted disabled:opacity-50 disabled:hover:shadow-none"
-        >
-          <Plus className="h-4 w-4" strokeWidth={2.5} />
-        </button>
-      </form>
-
+      }
+      bodyClassName="pb-4"
+    >
       {groups.length === 0 ? (
-        <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-            <CalendarCheck className="h-5 w-5" strokeWidth={1.75} />
-          </div>
-          <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            {dict.challenges.emptyState}
-          </p>
-        </div>
+        <EmptyStatePanel
+          icon={<CalendarCheck className="h-5 w-5" strokeWidth={1.75} />}
+          description={dict.challenges.emptyState}
+        />
       ) : (
         <div className="flex flex-col gap-7">
           {groups.map((group) => (
@@ -649,7 +682,7 @@ export default function ChallengesView() {
           ))}
         </div>
       )}
-    </div>
+    </ViewShell>
   );
 }
 
@@ -686,8 +719,10 @@ function DatePopover({
   onToggleMonthDay,
 }: DatePopoverProps) {
   const { dict, language } = useLanguage();
-  const texts = datePopoverTextByLanguage[language];
-  const recurrenceLabels = recurrenceLabelsByLanguage[language];
+  const texts =
+    datePopoverTextByLanguage[language] ?? datePopoverTextByLanguage.es;
+  const recurrenceLabels =
+    recurrenceLabelsByLanguage[language] ?? recurrenceLabelsByLanguage.es;
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -1084,7 +1119,7 @@ function DayGroup({
   const [showCompleted, setShowCompleted] = useState(false);
 
   return (
-    <section>
+    <GlassPanel as="section" className="p-4">
       <div className="mb-2 flex items-center gap-3">
         <h3 className="shrink-0 text-xs font-medium tracking-wider text-muted-foreground uppercase">
           {label}
@@ -1127,7 +1162,7 @@ function DayGroup({
           )}
         </div>
       )}
-    </section>
+    </GlassPanel>
   );
 }
 

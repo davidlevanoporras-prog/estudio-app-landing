@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ChevronRight,
   CircleHelp,
@@ -8,9 +8,18 @@ import {
   Plus,
   Play,
   Save,
+  SearchX,
   Trash2,
+  Upload,
 } from "lucide-react";
+import { useConfirm } from "../components/ConfirmProvider";
+import EmptyStatePanel from "../components/EmptyStatePanel";
 import { useLanguage } from "../i18n/LanguageContext";
+import {
+  importSimulatorDecksFromDialog,
+  importSimulatorDecksFromFile,
+} from "../lib/easimExport";
+import { matchesLibrarySearch } from "../lib/librarySearch";
 import { useLibraryStore } from "../store/libraryStore";
 import { useSimulatorStore } from "../store/simulatorStore";
 import type { ClozeCard, SimulationDeck } from "../types/simulator";
@@ -19,19 +28,49 @@ import {
   clozeSegmentsFromCard,
   parseClozeSyntax,
 } from "../utils/parseClozeSyntax";
-import { useConfirm } from "../components/ConfirmProvider";
 
 type Selection =
   | { kind: "folder"; id: string }
   | { kind: "deck"; id: string }
   | null;
 
+type SimulatorManagerProps = {
+  /** Notifica el mazo activo en el árbol (para EXPORTAR en cabecera). */
+  onActiveDeckChange?: (deck: SimulationDeck | null) => void;
+  /** Filtro en tiempo real desde la cabecera del Simulador. */
+  searchQuery?: string;
+  onClearSearch?: () => void;
+};
+
+function simulationDeckMatches(
+  deck: SimulationDeck,
+  query: string,
+  folderName?: string,
+): boolean {
+  const answers = deck.cards.flatMap((card) => [
+    card.answer,
+    ...(card.answers ?? []),
+  ]);
+  return matchesLibrarySearch(query, [
+    deck.title,
+    folderName,
+    String(deck.cards.length),
+    `${deck.cards.length} cards`,
+    `${deck.cards.length} preguntas`,
+    ...answers,
+  ]);
+}
+
 /**
  * Gestor de biblioteca del Simulador — split view:
  * árbol de carpetas/mazos (izq.) + editor CRUD de cloze (der.).
  */
-export default function SimulatorManager() {
-  const { dict } = useLanguage();
+export default function SimulatorManager({
+  onActiveDeckChange,
+  searchQuery = "",
+  onClearSearch,
+}: SimulatorManagerProps) {
+  const { dict, t } = useLanguage();
   const confirm = useConfirm();
   const folders = useLibraryStore((s) => s.folders);
   const decks = useLibraryStore((s) => s.decks);
@@ -44,12 +83,18 @@ export default function SimulatorManager() {
   const addCard = useLibraryStore((s) => s.addCard);
   const updateCard = useLibraryStore((s) => s.updateCard);
   const deleteCard = useLibraryStore((s) => s.deleteCard);
+  const importDecks = useLibraryStore((s) => s.importDecks);
   const startSession = useSimulatorStore((s) => s.startSession);
 
   const [selection, setSelection] = useState<Selection>(null);
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(
     () => new Set(folders.map((f) => f.id)),
   );
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [importFeedback, setImportFeedback] = useState<string | null>(null);
+  const [isImporting, setIsImporting] = useState(false);
+
+  const hasActiveSearch = searchQuery.trim().length > 0;
 
   const rootFolders = useMemo(
     () => folders.filter((f) => f.parentId === null),
@@ -60,10 +105,50 @@ export default function SimulatorManager() {
     [decks],
   );
 
+  const filteredOrphanDecks = useMemo(
+    () =>
+      orphanDecks.filter((deck) =>
+        simulationDeckMatches(deck, searchQuery),
+      ),
+    [orphanDecks, searchQuery],
+  );
+
+  const visibleRootFolders = useMemo(() => {
+    if (!hasActiveSearch) return rootFolders;
+    return rootFolders.filter((folder) => {
+      if (matchesLibrarySearch(searchQuery, [folder.name])) return true;
+      return decks.some(
+        (deck) =>
+          deck.folderId === folder.id &&
+          simulationDeckMatches(deck, searchQuery, folder.name),
+      );
+    });
+  }, [rootFolders, decks, searchQuery, hasActiveSearch]);
+
+  const noSearchMatches =
+    hasActiveSearch &&
+    filteredOrphanDecks.length === 0 &&
+    visibleRootFolders.length === 0;
+
+  useEffect(() => {
+    if (!hasActiveSearch) return;
+    setExpandedFolders((prev) => {
+      const next = new Set(prev);
+      for (const folder of visibleRootFolders) {
+        next.add(folder.id);
+      }
+      return next;
+    });
+  }, [hasActiveSearch, visibleRootFolders]);
+
   const selectedDeck: SimulationDeck | undefined =
     selection?.kind === "deck"
       ? decks.find((d) => d.id === selection.id)
       : undefined;
+
+  useEffect(() => {
+    onActiveDeckChange?.(selectedDeck ?? null);
+  }, [selectedDeck, onActiveDeckChange]);
 
   const toggleFolder = (id: string) => {
     setExpandedFolders((prev) => {
@@ -90,8 +175,76 @@ export default function SimulatorManager() {
     startSession(deck.cards, { deckId: deck.id, deckTitle: deck.title });
   };
 
+  const applyImportResult = (
+    result: Awaited<ReturnType<typeof importSimulatorDecksFromDialog>>,
+  ) => {
+    if (result.ok) {
+      const ids = importDecks(result.decks);
+      const firstId = ids[0];
+      if (firstId) setSelection({ kind: "deck", id: firstId });
+      setImportFeedback(
+        t(dict.simulator.importSuccess, { count: result.decks.length }),
+      );
+      return;
+    }
+    if (result.reason === "cancelled") return;
+    setImportFeedback(dict.simulator.importInvalidFormat);
+  };
+
+  const handleImportClick = () => {
+    setIsImporting(true);
+    setImportFeedback(null);
+    void importSimulatorDecksFromDialog()
+      .then(applyImportResult)
+      .finally(() => setIsImporting(false));
+  };
+
+  const handleDropFiles = (files: FileList | null) => {
+    const file = files?.[0];
+    if (!file) return;
+    setIsImporting(true);
+    setImportFeedback(null);
+    void importSimulatorDecksFromFile(file)
+      .then(applyImportResult)
+      .finally(() => setIsImporting(false));
+  };
+
   return (
-    <div className="glow-card flex min-h-[32rem] flex-1 overflow-hidden border-card-rest bg-card/90 backdrop-blur-xl">
+    <div
+      className={[
+        "glow-card relative flex min-h-[32rem] flex-1 overflow-hidden border-card-rest bg-card/90 backdrop-blur-xl transition-colors",
+        isDragOver ? "border-primary/60 bg-primary-soft/20" : "",
+      ].join(" ")}
+      onDragEnter={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragOver(true);
+      }}
+      onDragOver={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragOver(true);
+      }}
+      onDragLeave={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.currentTarget === event.target) setIsDragOver(false);
+      }}
+      onDrop={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setIsDragOver(false);
+        handleDropFiles(event.dataTransfer.files);
+      }}
+    >
+      {isDragOver && (
+        <div className="pointer-events-none absolute inset-0 z-20 flex items-center justify-center bg-background/55 backdrop-blur-[2px]">
+          <p className="rounded-xl border border-primary/40 bg-primary-soft px-4 py-2 text-sm font-medium text-primary shadow-glow-sm">
+            {dict.simulator.importDropHint}
+          </p>
+        </div>
+      )}
+
       {/* Árbol izquierdo */}
       <aside className="flex w-full max-w-[16rem] shrink-0 flex-col border-r border-card-rest md:max-w-[18rem]">
         <div className="flex items-center justify-between gap-2 border-b border-card-rest px-3 py-3">
@@ -99,6 +252,15 @@ export default function SimulatorManager() {
             {dict.simulator.library}
           </p>
           <div className="flex items-center gap-1">
+            <button
+              type="button"
+              title={dict.simulator.importButton}
+              disabled={isImporting}
+              onClick={handleImportClick}
+              className="premium-btn flex h-7 w-7 items-center justify-center rounded-md text-icon-muted transition-colors hover:bg-background/60 hover:text-primary disabled:opacity-50"
+            >
+              <Upload className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
             <button
               type="button"
               title={dict.simulator.newFolder}
@@ -117,11 +279,48 @@ export default function SimulatorManager() {
             </button>
           </div>
         </div>
+        {importFeedback && (
+          <p
+            className="border-b border-card-rest px-3 py-2 text-[11px] leading-snug text-muted-foreground"
+            role="status"
+          >
+            {importFeedback}
+          </p>
+        )}
 
         <nav className="flex-1 space-y-1 overflow-y-auto p-2">
-          {rootFolders.map((folder) => {
+          {noSearchMatches ? (
+            <EmptyStatePanel
+              className="mx-1 my-2 px-3 py-8"
+              icon={<SearchX className="h-5 w-5" strokeWidth={1.5} />}
+              description={t(dict.librarySearch.noResults, {
+                query: searchQuery.trim(),
+              })}
+              action={
+                onClearSearch ? (
+                  <button
+                    type="button"
+                    onClick={onClearSearch}
+                    className="rounded-lg border border-card-rest px-3 py-1.5 text-xs font-medium text-secondary-foreground transition-colors hover:border-primary hover:text-foreground"
+                  >
+                    {dict.librarySearch.clearFilter}
+                  </button>
+                ) : null
+              }
+            />
+          ) : null}
+
+          {!noSearchMatches &&
+            visibleRootFolders.map((folder) => {
             const open = expandedFolders.has(folder.id);
-            const childDecks = decks.filter((d) => d.folderId === folder.id);
+            const childDecks = decks
+              .filter((d) => d.folderId === folder.id)
+              .filter(
+                (deck) =>
+                  !hasActiveSearch ||
+                  simulationDeckMatches(deck, searchQuery, folder.name) ||
+                  matchesLibrarySearch(searchQuery, [folder.name]),
+              );
             const isSelected =
               selection?.kind === "folder" && selection.id === folder.id;
 
@@ -190,12 +389,12 @@ export default function SimulatorManager() {
             );
           })}
 
-          {orphanDecks.length > 0 && (
+          {!noSearchMatches && filteredOrphanDecks.length > 0 && (
             <div className="pt-2">
               <p className="px-2 pb-1 text-[10px] font-medium tracking-wider text-muted-foreground/80 uppercase">
                 {dict.simulator.noFolder}
               </p>
-              {orphanDecks.map((deck) => (
+              {filteredOrphanDecks.map((deck) => (
                 <DeckRow
                   key={deck.id}
                   deck={deck}

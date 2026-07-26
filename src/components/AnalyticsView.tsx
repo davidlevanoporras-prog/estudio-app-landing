@@ -9,6 +9,8 @@ import {
 } from "../lib/studyStats";
 import type { Deck } from "../types/deck";
 import { useConfirm } from "./ConfirmProvider";
+import EmptyStatePanel from "./EmptyStatePanel";
+import GlassPanel from "./GlassPanel";
 
 type AnalyticsViewProps = {
   decks: Deck[];
@@ -46,7 +48,7 @@ export default function AnalyticsView({ decks }: AnalyticsViewProps) {
 
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <GlassPanel className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
         <div className="flex items-center gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary">
             <BarChart3 className="h-5 w-5" strokeWidth={2} />
@@ -64,31 +66,27 @@ export default function AnalyticsView({ decks }: AnalyticsViewProps) {
           <Trash2 className="h-4 w-4" strokeWidth={2} />
           {dict.analytics.resetButton}
         </button>
-      </div>
+      </GlassPanel>
 
       {/* Zona superior — consolidado global */}
-      <section>
+      <GlassPanel as="section" className="p-6">
         <h3 className="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
           {dict.analytics.global}
         </h3>
         <RatingBarChart counts={stats.global} />
-      </section>
+      </GlassPanel>
 
       {/* Zona inferior — selector de mazos + gráfico individual */}
-      <section>
+      <GlassPanel as="section" className="p-6">
         <h3 className="mb-3 text-xs font-medium tracking-wider text-muted-foreground uppercase">
           {dict.analytics.deckAnalysis}
         </h3>
 
         {decks.length === 0 ? (
-          <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-              <Layers className="h-5 w-5" strokeWidth={1.75} />
-            </div>
-            <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-              {dict.analytics.noDecksState}
-            </p>
-          </div>
+          <EmptyStatePanel
+            icon={<Layers className="h-5 w-5" strokeWidth={1.75} />}
+            description={dict.analytics.noDecksState}
+          />
         ) : (
           <div className="flex flex-col gap-5">
             <div className="flex flex-wrap gap-2" role="tablist" aria-label={dict.analytics.deckAnalysis}>
@@ -123,7 +121,7 @@ export default function AnalyticsView({ decks }: AnalyticsViewProps) {
             )}
           </div>
         )}
-      </section>
+      </GlassPanel>
     </div>
   );
 }
@@ -168,7 +166,7 @@ function RatingBarChart({ counts }: { counts: RatingCounts }) {
   ];
 
   return (
-    <div className="glow-card p-6">
+    <div>
       <div className="flex flex-col gap-4">
         {rows.map((row) => (
           <div key={row.label}>

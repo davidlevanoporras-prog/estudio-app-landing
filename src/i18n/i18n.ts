@@ -8,6 +8,7 @@ import {
 
 const resources = {
   es: { translation: translations.es },
+  fr: { translation: translations.fr },
   en: { translation: translations.en },
   de: { translation: translations.de },
   ja: { translation: translations.ja },

@@ -1,8 +1,12 @@
+import { useState } from "react";
 import { ArrowLeft, Check, Lock, RotateCcw, Sparkles } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
-import { useLicense } from "../i18n/LicenseContext";
+import { useThemeEntitlement } from "../i18n/ThemeEntitlementContext";
 import {
   DEFAULT_ACCENT_HEX,
+  getAccentForTheme,
+  isFreeSampleTheme,
+  isThemeAccessible,
   resolveThemeMode,
   THEME_CATALOG,
   useThemeStore,
@@ -10,11 +14,11 @@ import {
 } from "../store/themeStore";
 import type { ResolvedMode } from "../types/theme";
 import ModeSegmentedControl from "./ModeSegmentedControl";
+import ProUpgradeModal from "./ProUpgradeModal";
+import ViewShell from "./ViewShell";
 
 type ThemeViewProps = {
   onExit: () => void;
-  accentColor: string | null;
-  onAccentColorChange: (color: string | null) => void;
   /** Modo ya resuelto en el Layout (incluye `auto` → light/dark). */
   resolvedMode: ResolvedMode;
   systemPrefersDark: boolean;
@@ -98,24 +102,27 @@ function ThemeEcosystemPreview({
 }
 
 /**
- * Showroom: Interfaz Clásica + 5 Entornos Fotográficos Premium.
- * Toggle Claro/Oscuro/Auto en cabecera; acento global abajo.
+ * Showroom: Interfaz Clásica + entornos fotográficos.
+ * Acento persistente por tema (`themeAccents[themeId]`).
  */
 export default function ThemeView({
   onExit,
-  accentColor,
-  onAccentColorChange,
   resolvedMode,
   systemPrefersDark,
 }: ThemeViewProps) {
   const { dict } = useLanguage();
-  const { isPremium } = useLicense();
+  const { hasThemesPack } = useThemeEntitlement();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const currentTheme = useThemeStore((state) => state.currentTheme);
   const themeMode = useThemeStore((state) => state.themeMode);
+  const themeAccents = useThemeStore((state) => state.themeAccents);
   const setTheme = useThemeStore((state) => state.setTheme);
   const setThemeMode = useThemeStore((state) => state.setThemeMode);
+  const setAccentColor = useThemeStore((state) => state.setAccentColor);
 
-  const accentSwatch = accentColor ?? DEFAULT_ACCENT_HEX;
+  const accentSwatch = getAccentForTheme(themeAccents, currentTheme);
+  const hasCustomAccent =
+    accentSwatch.toLowerCase() !== DEFAULT_ACCENT_HEX.toLowerCase();
   // Preview del control: si Auto, sigue al SO; si no, al modo elegido.
   const controlResolved =
     themeMode === "auto"
@@ -123,52 +130,65 @@ export default function ThemeView({
       : resolvedMode;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8">
-      <button
-        type="button"
-        onClick={onExit}
-        className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
-      >
-        <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-        {dict.themeView.backLabel}
-      </button>
+    <>
+    <ViewShell
+      className="mx-auto max-w-4xl"
+      bodyClassName="flex flex-col gap-8 pb-16 md:pb-24"
+      header={
+        /* Cabecera protectora: mismo cristal que el resto del Showroom. */
+        <section className="glow-card rounded-2xl p-6">
+          <button
+            type="button"
+            onClick={onExit}
+            className="premium-btn mb-4 flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+            {dict.themeView.backLabel}
+          </button>
 
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h2 className="text-xl font-semibold tracking-tight text-foreground">
-            {dict.themeView.title}
-          </h2>
-          <p className="mt-1 max-w-xl text-sm text-muted-foreground">
-            Interfaz Clásica respeta Claro/Oscuro/Auto. Los entornos
-            fotográficos mantienen paneles oscuros para proteger el contraste.
-          </p>
-        </div>
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-xl font-semibold tracking-tight text-foreground">
+                {dict.themeView.title}
+              </h2>
+              <p className="mt-1 max-w-xl text-sm text-muted-foreground">
+                {dict.themeView.subtitle}
+              </p>
+            </div>
 
-        <ModeSegmentedControl
-          mode={themeMode}
-          resolvedMode={controlResolved}
-          onChange={(mode) => void setThemeMode(mode)}
-          groupLabel={dict.themeView.modeGroupLabel}
-          labels={{
-            light: dict.themeView.modeOptions.light,
-            dark: dict.themeView.modeOptions.dark,
-            auto: dict.themeView.modeOptions.system,
-          }}
-        />
-      </div>
-
+            <ModeSegmentedControl
+              mode={themeMode}
+              resolvedMode={controlResolved}
+              onChange={(mode) => void setThemeMode(mode)}
+              groupLabel={dict.themeView.modeGroupLabel}
+              labels={{
+                light: dict.themeView.modeOptions.light,
+                dark: dict.themeView.modeOptions.dark,
+                auto: dict.themeView.modeOptions.system,
+              }}
+            />
+          </div>
+        </section>
+      }
+    >
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {THEME_CATALOG.map((theme) => {
           const isActive = currentTheme === theme.id;
-          const isLocked = theme.isPremium && !isPremium;
+          const isLocked = !isThemeAccessible(theme, hasThemesPack);
+          const isSample = isFreeSampleTheme(theme.id);
+          const showFreeBadge = isSample && !hasThemesPack && !isLocked;
+          const showProBadge = theme.isPremium && !isLocked && !showFreeBadge;
+          const themeAccent = getAccentForTheme(themeAccents, theme.id);
 
           return (
             <button
               key={theme.id}
               type="button"
-              disabled={isLocked}
               onClick={() => {
-                if (isLocked) return;
+                if (isLocked) {
+                  setShowUpgradeModal(true);
+                  return;
+                }
                 void setTheme(theme.id);
               }}
               aria-pressed={isActive}
@@ -181,7 +201,7 @@ export default function ThemeView({
               className={[
                 "glow-card group relative flex flex-col gap-3 p-4 text-left transition-all duration-300",
                 isActive && !isLocked ? "border-primary shadow-glow-card" : "",
-                isLocked ? "cursor-not-allowed" : "",
+                isLocked ? "cursor-pointer" : "",
               ].join(" ")}
               style={
                 isActive && !isLocked
@@ -193,7 +213,7 @@ export default function ThemeView({
                 <ThemeEcosystemPreview
                   theme={theme}
                   resolvedMode={resolvedMode}
-                  accentHex={accentSwatch}
+                  accentHex={themeAccent}
                 />
               </div>
 
@@ -219,12 +239,19 @@ export default function ThemeView({
                     {theme.name}
                   </span>
                   <span className="block text-[11px] text-muted-foreground">
-                    {theme.hasImage ? "Entorno fotográfico" : "Sin imagen de fondo"}
+                    {theme.hasImage
+                      ? "Entorno fotográfico"
+                      : "Sin imagen de fondo"}
                   </span>
                 </div>
 
                 <div className="flex shrink-0 items-center gap-1.5">
-                  {theme.isPremium && !isLocked && (
+                  {showFreeBadge && (
+                    <span className="rounded-full border border-emerald-500/40 bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-wide text-emerald-400 uppercase">
+                      Free
+                    </span>
+                  )}
+                  {showProBadge && (
                     <span className="rounded-full border border-primary/40 bg-primary-soft px-2 py-0.5 text-[10px] font-semibold tracking-wide text-primary uppercase">
                       Pro
                     </span>
@@ -246,7 +273,7 @@ export default function ThemeView({
         })}
       </div>
 
-      <section className="glow-card p-6">
+      <section className="glow-card shrink-0 p-6">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-icon-muted" strokeWidth={2} />
           <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
@@ -256,15 +283,14 @@ export default function ThemeView({
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
           <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Este acento se aplica a todos los temas: bordes activos, iconos y
-            pestaña actual.
+            {dict.profile.accentColorDescription}
           </p>
 
           <div className="flex shrink-0 items-center gap-3">
-            {accentColor && (
+            {hasCustomAccent && (
               <button
                 type="button"
-                onClick={() => onAccentColorChange(null)}
+                onClick={() => setAccentColor(null)}
                 aria-label={dict.profile.accentColorResetLabel}
                 title={dict.profile.accentColorResetLabel}
                 className="premium-btn flex h-11 w-11 items-center justify-center rounded-lg border border-card-rest text-icon-muted transition-all duration-300 hover:border-primary hover:text-primary"
@@ -277,7 +303,7 @@ export default function ThemeView({
               <input
                 type="color"
                 value={accentSwatch}
-                onChange={(event) => onAccentColorChange(event.target.value)}
+                onChange={(event) => setAccentColor(event.target.value)}
                 aria-label={dict.profile.accentColorLabel}
                 className="h-11 w-20 cursor-pointer rounded-xl border-2 border-card-rest bg-transparent p-1 shadow-glow-sm transition-all duration-300 hover:border-primary hover:shadow-glow-card [&::-webkit-color-swatch]:rounded-lg [&::-webkit-color-swatch]:border-none [&::-webkit-color-swatch-wrapper]:rounded-lg [&::-webkit-color-swatch-wrapper]:p-0"
               />
@@ -285,6 +311,14 @@ export default function ThemeView({
           </div>
         </div>
       </section>
-    </div>
+    </ViewShell>
+
+    {showUpgradeModal && (
+      <ProUpgradeModal
+        onClose={() => setShowUpgradeModal(false)}
+        onOpenStore={onExit}
+      />
+    )}
+    </>
   );
 }

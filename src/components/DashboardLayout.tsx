@@ -2,33 +2,30 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import {
   BarChart3,
   BookOpen,
-  Bot,
   CalendarCheck,
-  Crosshair,
   Eye,
   EyeOff,
-  GraduationCap,
-  HandHelping,
   LayoutDashboard,
   Layers,
   Library,
-  Lock,
-  Menu,
   Puzzle,
   Pause,
   Play,
   RotateCcw,
   Timer,
   User,
-  X,
   type LucideIcon,
 } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { useLicense } from "../i18n/LicenseContext";
-import type { AssistantMode } from "../lib/assistantMemory";
+import { useThemeEntitlement } from "../i18n/ThemeEntitlementContext";
 import { loadDecks, saveDecks } from "../lib/deckStore";
 import { removeDeckStats } from "../lib/studyStats";
 import { loadGlobalTimer, saveGlobalTimer } from "../lib/time";
+import {
+  persistUserAvatar,
+  readUserAvatar,
+} from "../lib/userAvatar";
 import type { Deck, StudyCardData } from "../types/deck";
 import { createInitialSrsState } from "../utils/spacedRepetition";
 import {
@@ -38,25 +35,34 @@ import {
 } from "../types/uiSpeed";
 import {
   applyThemeAppearance,
+  CLASSIC_THEME_ID,
+  DEFAULT_ACCENT_HEX,
+  getAccentForTheme,
   getSystemPrefersDark,
   getThemeConfig,
+  isThemeAccessible,
   resolveThemeMode,
   useThemeStore,
 } from "../store/themeStore";
 import AnalyticsView from "./AnalyticsView";
-import AssistantView from "./AssistantView";
 import ChallengesView from "./ChallengesView";
 import DashboardHomeView from "./DashboardHomeView";
 import DeckEditorView from "./DeckEditorView";
 import FlashcardsView from "./FlashcardsView";
+import GlassPanel from "./GlassPanel";
 import LaboratoryView from "./LaboratoryView";
+import MobileBottomNav, {
+  type MobileNavTabId,
+} from "./MobileBottomNav";
 import ProfileView, { type SubscriptionPlan } from "./ProfileView";
 import SourcesView from "./SourcesView";
 import StudyView from "./StudyView";
 import ThemeView from "./ThemeView";
 import TimeAnalyticsView from "./TimeAnalyticsView";
+import ViewErrorBoundary from "./ViewErrorBoundary";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 import SimulatorView from "../views/SimulatorView";
-import { useUserStore } from "../store/userStore";
 
 type ViewId =
   | "dashboard"
@@ -72,7 +78,8 @@ type ViewId =
   | "theme";
 
 /** Rutas del Sidebar que requieren licencia Pro. */
-const PREMIUM_NAV_IDS: ReadonlySet<ViewId> = new Set(["assistant"]);
+/** Vistas Pro bloqueables — vacío mientras el acceso es total (MAS). */
+const PREMIUM_NAV_IDS: ReadonlySet<ViewId> = new Set();
 
 /**
  * Las 3 caras de la pestaña "Análisis": "El Laboratorio" (neuro-métricas —
@@ -101,7 +108,6 @@ type NavGroup = {
   items: NavItem[];
 };
 
-const ACCENT_COLOR_STORAGE_KEY = "estudio-accent-color";
 const UI_SPEED_STORAGE_KEY = "estudio-ui-speed";
 const SESSION_TIME_STORAGE_KEY = "estudio-session-timer";
 
@@ -124,15 +130,10 @@ const navGroups: NavGroup[] = [
       { id: "analisis", labelKey: "analytics", icon: BarChart3 },
       { id: "sources", labelKey: "sources", icon: Library },
       { id: "simulator", labelKey: "simulator", icon: Puzzle },
-      { id: "assistant", labelKey: "assistant", icon: Bot },
+      // Asistente oculto — cumplimiento Mac App Store (sin muros / Próximamente).
     ],
   },
 ];
-
-/** Valida un hex de `<input type="color">` (siempre `#rrggbb`) antes de confiar en lo persistido. */
-function isValidHexColor(value: string | null): value is string {
-  return typeof value === "string" && /^#[0-9a-fA-F]{6}$/.test(value);
-}
 
 let deckIdSequence = 0;
 function createDeckId(): string {
@@ -185,32 +186,40 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const [activeView, setActiveView] = useState<ViewId>("dashboard");
   const [analyticsTab, setAnalyticsTab] = useState<AnalyticsTab>("lab");
-  /** Modo activo de la Consola Clínica — Inquisidor (chat) o Catedrático (simulacro). */
-  const [assistantMode, setAssistantMode] =
-    useState<AssistantMode>("inquisidor");
   const currentTheme = useThemeStore((state) => state.currentTheme);
   const themeMode = useThemeStore((state) => state.themeMode);
+  const themeAccents = useThemeStore((state) => state.themeAccents);
   const loadTheme = useThemeStore((state) => state.loadTheme);
   const activeThemeConfig = getThemeConfig(currentTheme);
   const [systemPrefersDark, setSystemPrefersDark] = useState(getSystemPrefersDark);
   const resolvedMode = resolveThemeMode(themeMode, systemPrefersDark);
-  // Color de Acento global — aplica a todos los temas.
-  const [accentColor, setAccentColor] = useState<string | null>(null);
+  /** Acento del tema activo (mapa persistente Tema → color). */
+  const accentColor = getAccentForTheme(themeAccents, currentTheme);
   const { dict, t } = useLanguage();
   const { isPremium } = useLicense();
-  const isPro = useUserStore((state) => state.isPro);
-  const isProUser = isPremium || isPro;
-  /** Modal Silent Luxury del Paywall — se abre al tocar Asistente sin Pro. */
-  const [showPaywallModal, setShowPaywallModal] = useState(false);
+  const { hasThemesPack } = useThemeEntitlement();
   /** Drawer del Sidebar en viewport móvil (< md). En desktop el aside es fijo. */
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
 
   const [userCode] = useState("#USR-9982");
-  const subscriptionPlan: SubscriptionPlan = isProUser ? "pro" : "basic";
+  /** Edición estándar — sin upsell ni candados (Mac App Store). */
+  const subscriptionPlan: SubscriptionPlan = "basic";
 
-  // Avatar dinámico: nace vacío (usa la inicial) hasta que el usuario suba
-  // una foto desde ProfileView vía `URL.createObjectURL`.
-  const [profileImage, setProfileImage] = useState<string | null>(null);
+  // Avatar persistente (`excellence_user_avatar`) — inicial si no hay foto.
+  const [profileImage, setProfileImage] = useState<string | null>(() =>
+    readUserAvatar(),
+  );
+
+  useEffect(() => {
+    // Re-hidratación defensiva al montar (p. ej. tras hard reset parcial).
+    const stored = readUserAvatar();
+    if (stored) setProfileImage(stored);
+  }, []);
+
+  const handleProfileImageChange = (next: string | null) => {
+    setProfileImage(next);
+    persistUserAvatar(next);
+  };
 
   // "El Inyector de Lujo": gobierna cuánto respiran las transiciones de toda
   // la interfaz. Por defecto 'luxury' — la app arranca en su modo más
@@ -286,11 +295,6 @@ export default function DashboardLayout({
   };
 
   useEffect(() => {
-    const storedAccent = localStorage.getItem(ACCENT_COLOR_STORAGE_KEY);
-    if (isValidHexColor(storedAccent)) {
-      setAccentColor(storedAccent);
-    }
-
     const storedUiSpeed = localStorage.getItem(UI_SPEED_STORAGE_KEY);
     if (isValidUiSpeed(storedUiSpeed)) {
       setUiSpeed(storedUiSpeed);
@@ -344,24 +348,23 @@ export default function DashboardLayout({
     return () => media.removeEventListener("change", handleChange);
   }, []);
 
-  // Inyección: predeterminado respeta modo; fotográficos son inmunes; acento global.
+  // Inyección: superficies del tema + acento del tema activo (`themeAccents`).
   useEffect(() => {
-    applyThemeAppearance(currentTheme, resolvedMode, accentColor);
-
-    if (accentColor) {
-      localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, accentColor);
-    } else {
-      localStorage.removeItem(ACCENT_COLOR_STORAGE_KEY);
-    }
+    applyThemeAppearance(
+      currentTheme,
+      resolvedMode,
+      accentColor || DEFAULT_ACCENT_HEX,
+    );
   }, [currentTheme, resolvedMode, accentColor]);
 
-  // Entorno Pro sin licencia → Interfaz Clásica.
+  // Tema premium bloqueado (sin IAP y sin Free Sample) → Interfaz Clásica.
+  // Bosque Dorado permanece accesible como muestra gratuita.
   useEffect(() => {
     const config = getThemeConfig(currentTheme);
-    if (!isPremium && config?.isPremium) {
-      void useThemeStore.getState().setTheme("tema-predeterminado");
+    if (config && !isThemeAccessible(config, hasThemesPack)) {
+      void useThemeStore.getState().setTheme(CLASSIC_THEME_ID);
     }
-  }, [isPremium, currentTheme]);
+  }, [hasThemesPack, currentTheme]);
 
   // Único `setInterval` para toda la app: vive en el Layout, así que nunca
   // se desmonta al cambiar de vista. Si está en pausa, ni siquiera arranca.
@@ -397,8 +400,11 @@ export default function DashboardLayout({
   const handleToggleGlobalTimer = () => setIsPaused((current) => !current);
   const handleToggleTimerVisibility = () =>
     setIsTimerVisible((current) => !current);
-  /** SOLO reinicia el reloj visual — `globalTime` (telemetría) permanece intacto siempre. */
-  const handleResetSessionTime = () => setSessionTime(0);
+  /** Reinicia el reloj visual a 00:00 y pausa. `globalTime` no se pone a cero. */
+  const handleResetSessionTime = () => {
+    setSessionTime(0);
+    setIsPaused(true);
+  };
 
   // "Lujo Percibido": cada cambio de vista respira con la velocidad elegida
   // en `uiSpeed`. `useLayoutEffect` apaga la opacidad *antes* del pintado
@@ -435,6 +441,29 @@ export default function DashboardLayout({
     };
     updateDecks((current) => [...current, newDeck]);
     return newDeck.id;
+  };
+
+  /** Importación Anki (.apkg): añade mazos traducidos a la bóveda local. */
+  const handleImportDecks = (imported: Deck[]) => {
+    if (imported.length === 0) return;
+    updateDecks((current) => {
+      const existingNames = new Set(current.map((d) => d.name));
+      const stamped = imported.map((deck) => {
+        let name = deck.name;
+        if (existingNames.has(name)) {
+          let suffix = 2;
+          while (existingNames.has(`${name} (${suffix})`)) suffix += 1;
+          name = `${name} (${suffix})`;
+        }
+        existingNames.add(name);
+        return {
+          ...deck,
+          id: createDeckId(),
+          name,
+        };
+      });
+      return [...current, ...stamped];
+    });
   };
 
   const handleRenameDeck = (id: string, name: string) => {
@@ -555,8 +584,8 @@ export default function DashboardLayout({
       className={[
         // Fondos fotográficos: cover/center/no-repeat (también en style inline).
         // `bg-fixed` solo desde md — en iOS móvil fixed backgrounds se rompen.
-        "min-h-screen w-full bg-cover bg-center bg-no-repeat transition-all duration-700 ease-in-out md:bg-fixed",
-        "flex flex-col text-foreground md:flex-row",
+        "flex h-dvh w-full overflow-hidden bg-cover bg-center bg-no-repeat transition-all duration-700 ease-in-out md:bg-fixed",
+        "flex-col text-foreground md:flex-row",
       ].join(" ")}
       style={rootBackgroundStyle}
     >
@@ -570,28 +599,19 @@ export default function DashboardLayout({
         />
       )}
 
-      {/* Hamburguesa flotante — libera el viewport vertical para las tarjetas. */}
-      <button
-        type="button"
-        aria-expanded={isMobileNavOpen}
-        aria-controls="app-sidebar"
-        aria-label={
-          isMobileNavOpen
-            ? dict.sidebar.closeMenuLabel
-            : dict.sidebar.openMenuLabel
-        }
-        onClick={() => setIsMobileNavOpen((open) => !open)}
-        className={[
-          "fixed bottom-5 left-5 z-[60] flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-cuervo text-foreground shadow-glow-card backdrop-blur-md transition-all duration-300 md:hidden",
-          "hover:border-primary hover:text-primary",
-        ].join(" ")}
-      >
-        {isMobileNavOpen ? (
-          <X className="h-5 w-5" strokeWidth={2} />
-        ) : (
-          <Menu className="h-5 w-5" strokeWidth={2} />
-        )}
-      </button>
+      {/* Bottom nav iOS — Dashboard / Flashcards / Sources / Profile / Más. */}
+      <MobileBottomNav
+        activeView={activeView}
+        isMoreOpen={isMobileNavOpen}
+        onSelect={(tab: MobileNavTabId) => {
+          if (tab === "more") {
+            setIsMobileNavOpen((open) => !open);
+            return;
+          }
+          setIsMobileNavOpen(false);
+          setActiveView(tab);
+        }}
+      />
 
       {/* Sidebar — drawer off-canvas en móvil; columna fija desde `md:`.
           `md:overflow-visible`: el flyout hover del Asistente no se recorta. */}
@@ -600,8 +620,9 @@ export default function DashboardLayout({
         className={[
           "flex flex-col border-wenge-border-subtle bg-cuervo",
           "fixed inset-y-0 left-0 z-50 w-[min(18rem,85vw)] border-r transition-transform duration-300 ease-in-out",
+          "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
           isMobileNavOpen ? "translate-x-0" : "-translate-x-full",
-          "md:relative md:z-30 md:h-screen md:w-64 md:shrink-0 md:translate-x-0 md:overflow-visible",
+          "md:relative md:z-30 md:h-screen md:w-64 md:shrink-0 md:translate-x-0 md:overflow-visible md:pt-0 md:pb-0",
         ].join(" ")}
       >
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-wenge-border-subtle px-6">
@@ -636,49 +657,14 @@ export default function DashboardLayout({
               {items.map(({ id, labelKey, icon: Icon }) => {
                 const isActive = activeView === id;
                 const label = dict.nav[labelKey];
-                const isNavLocked = PREMIUM_NAV_IDS.has(id) && !isPremium;
-
-                // "Asistente": flyout hover con los 3 modos. Si !Pro, el
-                // clic no cambia de vista — abre el modal del Paywall.
-                if (id === "assistant") {
-                  return (
-                    <AssistantNavItem
-                      key={id}
-                      label={label}
-                      isActive={isActive}
-                      isLocked={isNavLocked}
-                      activeMode={assistantMode}
-                      onSelectMode={(mode) => {
-                        if (!isPremium) {
-                          setShowPaywallModal(true);
-                          setIsMobileNavOpen(false);
-                          return;
-                        }
-                        setAssistantMode(mode);
-                        setActiveView("assistant");
-                      }}
-                      onLockedClick={() => {
-                        setShowPaywallModal(true);
-                        setIsMobileNavOpen(false);
-                      }}
-                    />
-                  );
-                }
 
                 return (
                   <button
                     key={id}
                     type="button"
-                    onClick={() => {
-                      if (isNavLocked) {
-                        setShowPaywallModal(true);
-                        setIsMobileNavOpen(false);
-                        return;
-                      }
-                      setActiveView(id);
-                    }}
+                    onClick={() => setActiveView(id)}
                     className={[
-                      "group flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap",
+                      "touch-target group flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap",
                       isActive
                         ? "rounded-lg border border-primary bg-primary-soft text-primary shadow-glow-sm transition-all duration-300"
                         : "glow-card-nav text-secondary-foreground hover:text-foreground",
@@ -695,13 +681,6 @@ export default function DashboardLayout({
                     />
                     <span className="flex min-w-0 flex-1 items-center gap-2">
                       {label}
-                      {isNavLocked && (
-                        <Lock
-                          className="h-3.5 w-3.5 shrink-0 text-icon-muted"
-                          strokeWidth={2}
-                          aria-hidden="true"
-                        />
-                      )}
                     </span>
                   </button>
                 );
@@ -715,17 +694,26 @@ export default function DashboardLayout({
             <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
               {dict.sidebar.planLabel}
             </p>
-            <p className="mt-1 text-sm font-semibold text-foreground">
-              {isProUser ? dict.profile.plans.pro : dict.profile.plans.basic}
+            <p
+              className={[
+                "mt-1 text-sm font-semibold",
+                hasThemesPack
+                  ? "bg-gradient-to-r from-[#F59E0B] via-[#D4AF37] to-[#FCD34D] bg-clip-text font-bold text-transparent"
+                  : "text-foreground",
+              ].join(" ")}
+            >
+              {hasThemesPack
+                ? dict.profile.plans.excellence
+                : dict.profile.plans.basic}
             </p>
           </div>
         </div>
       </aside>
 
-      {/* Main area */}
-      <div className="relative flex min-w-0 flex-1 flex-col">
+      {/* Main area — cabecera app fija; el scroll vive dentro de cada vista */}
+      <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-wenge-border-subtle bg-cuervo px-4 md:px-8">
+        <header className="flex min-h-16 shrink-0 items-center justify-between border-b border-wenge-border-subtle bg-cuervo px-4 pt-[env(safe-area-inset-top)] md:px-8 md:pt-0">
           <div>
             <p className="text-sm text-muted-foreground">{greeting}</p>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
@@ -773,8 +761,10 @@ export default function DashboardLayout({
                 title={isTimerVisible ? undefined : dict.header.timerShowLabel}
                 className={[
                   "flex items-center overflow-hidden transition-all duration-[600ms] ease-in-out",
+                  // `w-max`: caben Eye + Play/Pause + Reset con touch-target 44px
+                  // (el antiguo `w-44` recortaba RotateCcw con overflow-hidden).
                   isTimerVisible
-                    ? "w-44 gap-1.5 px-3 py-1.5"
+                    ? "w-max max-w-full gap-0.5 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5"
                     : "w-10 cursor-pointer justify-center px-0 py-1.5 hover:text-primary",
                 ].join(" ")}
               >
@@ -803,7 +793,7 @@ export default function DashboardLayout({
                       onClick={handleToggleTimerVisibility}
                       aria-label={dict.header.timerHideLabel}
                       title={dict.header.timerHideLabel}
-                      className="premium-btn flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
+                      className="touch-target premium-btn flex shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
                     >
                       <Eye className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
@@ -820,7 +810,7 @@ export default function DashboardLayout({
                           ? dict.header.timerResumeLabel
                           : dict.header.timerPauseLabel
                       }
-                      className="premium-btn flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
+                      className="touch-target premium-btn flex shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
                     >
                       {isPaused ? (
                         <Play className="h-3.5 w-3.5" strokeWidth={2} />
@@ -833,7 +823,7 @@ export default function DashboardLayout({
                       onClick={handleResetSessionTime}
                       aria-label={dict.header.timerResetLabel}
                       title={dict.header.timerResetLabel}
-                      className="premium-btn flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
+                      className="touch-target premium-btn flex shrink-0 items-center justify-center rounded-full text-icon-muted transition-all duration-300 hover:text-primary"
                     >
                       <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
                     </button>
@@ -861,7 +851,7 @@ export default function DashboardLayout({
             <button
               type="button"
               onClick={() => setActiveView("profile")}
-              className="premium-btn flex items-center gap-3 rounded-full border border-transparent py-1 pl-3 pr-1 transition-all duration-300 hover:border-primary hover:shadow-glow-card"
+              className="touch-target premium-btn flex items-center gap-3 rounded-full border border-transparent py-1 pl-3 pr-1 transition-all duration-300 hover:border-primary hover:shadow-glow-card"
               aria-label={dict.header.goToProfileLabel}
             >
               <span className="hidden text-right sm:block">
@@ -894,13 +884,13 @@ export default function DashboardLayout({
           </div>
         </header>
 
-        {/* Content — swaps per activeView; Header and Sidebar stay fixed.
-            La opacidad y su duración dinámica (`transitionDurationClass`) son
-            "El Inyector de Lujo": cada cambio de pantalla respira con la
-            velocidad elegida en ProfileView (ver Misión 1). */}
+        {/* Content — shell de vista (cabecera estática + scroll interno).
+            Overflow aquí es `hidden`: cada vista usa `ViewShell`. */}
         <main
           className={[
-            "flex-1 overflow-y-auto p-4 pb-24 transition-opacity md:p-8 md:pb-8",
+            "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden p-4 transition-opacity",
+            // Hueco para bottom nav + home indicator iOS.
+            "pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:p-8 md:pb-8",
             transitionDurationClass,
             isViewVisible ? "opacity-100" : "opacity-0",
           ].join(" ")}
@@ -911,11 +901,13 @@ export default function DashboardLayout({
             // en la declaración de `decks` más arriba), pero cualquier
             // vista que dependa de `decks` debe esperar a los datos reales
             // en vez de flashear un dashboard vacío.
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {dict.loadingVault.decksLabel}
+            <div className="flex h-full items-center justify-center">
+              <GlassPanel className="px-6 py-4 text-center text-sm text-muted-foreground">
+                {dict.loadingVault.decksLabel}
+              </GlassPanel>
             </div>
           ) : (
-            <>
+            <ViewErrorBoundary key={activeView} moduleName={activeView}>
               {activeView === "dashboard" && (
                 <DashboardHomeView
                   decks={decks}
@@ -927,6 +919,7 @@ export default function DashboardLayout({
                 <FlashcardsView
                   decks={decks}
                   onCreateDeck={handleCreateDeck}
+                  onImportDecks={handleImportDecks}
                   onRenameDeck={handleRenameDeck}
                   onOpenDeck={handleOpenDeck}
                   onEditDeck={handleEditDeck}
@@ -951,40 +944,48 @@ export default function DashboardLayout({
                 />
               )}
               {activeView === "analisis" && (
-                <div className="flex flex-col gap-6">
-                  <div
-                    className="flex w-fit items-center gap-1 rounded-full border border-card-rest bg-card p-1"
-                    role="tablist"
-                    aria-label={dict.analytics.title}
-                  >
-                    {(
-                      [
-                        { id: "lab", label: dict.analytics.labTab },
-                        { id: "performance", label: dict.analytics.performanceTab },
-                        { id: "time", label: dict.analytics.timeTab },
-                      ] as const
-                    ).map(({ id, label }) => {
-                      const isActive = analyticsTab === id;
-                      return (
-                        <button
-                          key={id}
-                          type="button"
-                          role="tab"
-                          aria-selected={isActive}
-                          onClick={() => setAnalyticsTab(id)}
-                          className={[
-                            "rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-all duration-300",
-                            isActive
-                              ? "bg-primary text-primary-foreground shadow-glow-sm"
-                              : "text-muted-foreground hover:text-foreground",
-                          ].join(" ")}
-                        >
-                          {label}
-                        </button>
-                      );
-                    })}
-                  </div>
-
+                <ViewShell
+                  header={
+                    <ViewHeaderCard className="w-fit">
+                      <div
+                        className="flex w-fit items-center gap-1 rounded-full border border-card-rest bg-card p-1"
+                        role="tablist"
+                        aria-label={dict.analytics.title}
+                      >
+                        {(
+                          [
+                            { id: "lab", label: dict.analytics.labTab },
+                            {
+                              id: "performance",
+                              label: dict.analytics.performanceTab,
+                            },
+                            { id: "time", label: dict.analytics.timeTab },
+                          ] as const
+                        ).map(({ id, label }) => {
+                          const isActive = analyticsTab === id;
+                          return (
+                            <button
+                              key={id}
+                              type="button"
+                              role="tab"
+                              aria-selected={isActive}
+                              onClick={() => setAnalyticsTab(id)}
+                              className={[
+                                "rounded-full px-4 py-1.5 text-xs font-semibold tracking-wide transition-all duration-300",
+                                isActive
+                                  ? "bg-primary text-primary-foreground shadow-glow-sm"
+                                  : "text-muted-foreground hover:text-foreground",
+                              ].join(" ")}
+                            >
+                              {label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </ViewHeaderCard>
+                  }
+                  bodyClassName="pb-4"
+                >
                   {analyticsTab === "lab" && <LaboratoryView decks={decks} />}
                   {analyticsTab === "performance" && (
                     <AnalyticsView decks={decks} />
@@ -992,7 +993,7 @@ export default function DashboardLayout({
                   {analyticsTab === "time" && (
                     <TimeAnalyticsView decks={decks} globalTime={globalTime} />
                   )}
-                </div>
+                </ViewShell>
               )}
               {activeView === "challenges" && <ChallengesView />}
               {activeView === "profile" && (
@@ -1003,232 +1004,23 @@ export default function DashboardLayout({
                   userCode={userCode}
                   subscriptionPlan={subscriptionPlan}
                   profileImage={profileImage}
-                  onProfileImageChange={setProfileImage}
-                  uiSpeed={uiSpeed}
-                  onUiSpeedChange={setUiSpeed}
+                  onProfileImageChange={handleProfileImageChange}
                   onOpenThemeView={() => setActiveView("theme")}
                 />
               )}
               {activeView === "theme" && (
                 <ThemeView
                   onExit={() => setActiveView("profile")}
-                  accentColor={accentColor}
-                  onAccentColorChange={setAccentColor}
                   resolvedMode={resolvedMode}
                   systemPrefersDark={systemPrefersDark}
                 />
               )}
               {activeView === "sources" && <SourcesView />}
               {activeView === "simulator" && <SimulatorView />}
-              {activeView === "assistant" && (
-                <AssistantView mode={assistantMode} />
-              )}
-            </>
+            </ViewErrorBoundary>
           )}
         </main>
       </div>
-
-      {showPaywallModal && (
-        <PaywallModal onDismiss={() => setShowPaywallModal(false)} />
-      )}
-    </div>
-  );
-}
-
-/** Modal Silent Luxury del Paywall — sin ruido comercial, solo autoridad. */
-function PaywallModal({ onDismiss }: { onDismiss: () => void }) {
-  const { dict } = useLanguage();
-
-  return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 px-4 backdrop-blur-sm"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="paywall-title"
-      onClick={onDismiss}
-    >
-      <div
-        className="ui-floating w-full max-w-md rounded-xl p-8 shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-full border border-card-rest text-icon-muted">
-          <Lock className="h-5 w-5" strokeWidth={1.75} />
-        </div>
-        <h2
-          id="paywall-title"
-          className="mt-5 text-center text-lg font-medium tracking-tight text-foreground"
-        >
-          {dict.paywall.title}
-        </h2>
-        <p className="mt-3 text-center text-sm leading-relaxed text-muted-foreground">
-          {dict.paywall.navLockedMessage}
-        </p>
-        <button
-          type="button"
-          onClick={onDismiss}
-          className="mt-7 w-full rounded-md border border-card-rest px-4 py-2.5 text-xs font-medium tracking-[0.14em] text-secondary-foreground uppercase transition-colors hover:border-primary/40 hover:text-foreground"
-        >
-          {dict.paywall.dismissLabel}
-        </button>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Ítem "Asistente" del Sidebar: al hover (y focus-within, para teclado)
- * despliega un flyout a la derecha con los tres modos. Inquisidor y
- * Catedrático son seleccionables; Facilitador permanece bloqueado con
- * badge "Próximamente". Si `isLocked`, el clic abre el Paywall.
- */
-function AssistantNavItem({
-  label,
-  isActive,
-  isLocked,
-  activeMode,
-  onSelectMode,
-  onLockedClick,
-}: {
-  label: string;
-  isActive: boolean;
-  isLocked: boolean;
-  activeMode: AssistantMode;
-  onSelectMode: (mode: AssistantMode) => void;
-  onLockedClick: () => void;
-}) {
-  const { dict } = useLanguage();
-
-  return (
-    <div className="group/assistant relative z-10 shrink-0 md:w-full md:hover:z-[100]">
-      <button
-        type="button"
-        onClick={() => {
-          if (isLocked) {
-            onLockedClick();
-            return;
-          }
-          onSelectMode(
-            activeMode === "facilitador" ? "inquisidor" : activeMode,
-          );
-        }}
-        aria-haspopup="menu"
-        className={[
-          "flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap",
-          isActive
-            ? "rounded-lg border border-primary bg-primary-soft text-primary shadow-glow-sm transition-all duration-300"
-            : "glow-card-nav text-secondary-foreground group-hover/assistant:text-foreground",
-        ].join(" ")}
-      >
-        <Bot
-          className={[
-            "h-5 w-5 shrink-0 transition-colors duration-300",
-            isActive
-              ? "text-primary"
-              : "text-icon-muted group-hover/assistant:text-primary",
-          ].join(" ")}
-          strokeWidth={2}
-        />
-        <span className="flex min-w-0 flex-1 items-center gap-2">
-          {label}
-          {isLocked && (
-            <Lock
-              className="h-3.5 w-3.5 shrink-0 text-icon-muted"
-              strokeWidth={2}
-              aria-hidden="true"
-            />
-          )}
-        </span>
-      </button>
-
-      {/* El padding exterior (`pt-1` / `md:pl-1.5`) es el "puente" invisible
-          que evita que el hover se rompa al cruzar el hueco entre el ítem
-          y el panel. */}
-      <div
-        className={[
-          "pointer-events-none absolute z-[100] opacity-0 transition-opacity duration-150",
-          "top-full left-0 pt-1",
-          "md:top-0 md:left-full md:pt-0 md:pl-1.5",
-          "group-hover/assistant:pointer-events-auto group-hover/assistant:opacity-100",
-          "group-focus-within/assistant:pointer-events-auto group-focus-within/assistant:opacity-100",
-        ].join(" ")}
-      >
-        <div
-          role="menu"
-          aria-label={dict.assistant.submenuLabel}
-          className="ui-floating w-56 rounded-lg p-1.5 shadow-2xl"
-        >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => onSelectMode("inquisidor")}
-            className={[
-              "ui-floating-item flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors duration-150",
-              isActive && activeMode === "inquisidor"
-                ? "bg-primary-soft text-primary"
-                : "",
-            ].join(" ")}
-          >
-            <Crosshair
-              className="h-3.5 w-3.5 shrink-0 text-amber-600/90"
-              strokeWidth={2}
-            />
-            <span className="flex-1 font-medium">
-              {dict.assistant.modeInquisitor}
-            </span>
-          </button>
-
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => onSelectMode("catedratico")}
-            className={[
-              "ui-floating-item flex w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left text-sm transition-colors duration-150",
-              isActive && activeMode === "catedratico"
-                ? "bg-primary-soft text-primary"
-                : "",
-            ].join(" ")}
-          >
-            <GraduationCap
-              className="h-3.5 w-3.5 shrink-0 text-stone-400"
-              strokeWidth={2}
-            />
-            <span className="flex-1 font-medium">
-              {dict.assistant.modeProfessor}
-            </span>
-          </button>
-
-          <LockedAssistantMode
-            icon={HandHelping}
-            label={dict.assistant.modeFacilitator}
-            badge={dict.assistant.comingSoonBadge}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/** Modo bloqueado del flyout — no es interactivo; solo anuncia "Próximamente". */
-function LockedAssistantMode({
-  icon: Icon,
-  label,
-  badge,
-}: {
-  icon: LucideIcon;
-  label: string;
-  badge: string;
-}) {
-  return (
-    <div
-      role="menuitem"
-      aria-disabled="true"
-      className="flex w-full cursor-not-allowed items-center gap-2.5 rounded-md px-2.5 py-2 text-sm text-muted-foreground/60"
-    >
-      <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2} />
-      <span className="flex-1 font-medium">{label}</span>
-      <span className="rounded border border-card-rest px-1.5 py-0.5 text-[9px] font-medium tracking-wider text-muted-foreground uppercase">
-        {badge}
-      </span>
     </div>
   );
 }

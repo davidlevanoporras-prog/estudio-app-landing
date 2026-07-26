@@ -7,6 +7,8 @@ import { getSecureJSON } from "../lib/secureStorage";
 import { VAULT_KEYS } from "../lib/vaultKeys";
 import type { Deck } from "../types/deck";
 import { isCardDue } from "../utils/spacedRepetition";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 
 const CHALLENGES_STORAGE_KEY = "estudio-challenges";
 
@@ -66,16 +68,19 @@ export default function DashboardHomeView({
   );
 
   return (
-    <>
-      <div className="mb-8">
-        <h2 className="text-xl font-semibold tracking-tight text-foreground">
-          {dict.summary.heading}
-        </h2>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {dict.summary.subheading}
-        </p>
-      </div>
-
+    <ViewShell
+      header={
+        <ViewHeaderCard className="w-fit max-w-2xl">
+          <h2 className="text-xl font-semibold tracking-tight text-foreground">
+            {dict.summary.heading}
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {dict.summary.subheading}
+          </p>
+        </ViewHeaderCard>
+      }
+      bodyClassName="pb-4"
+    >
       <section className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         <ChallengesCard onNavigate={onNavigateToChallenges} />
         <FlashcardsSummaryCard
@@ -97,7 +102,7 @@ export default function DashboardHomeView({
           {dict.continueCard.description}
         </p>
       </section>
-    </>
+    </ViewShell>
   );
 }
 

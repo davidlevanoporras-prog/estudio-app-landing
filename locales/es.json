@@ -23,7 +23,9 @@
     "sources": "Fuentes",
     "challenges": "Desafíos",
     "simulator": "Simulador",
-    "assistant": "Asistente"
+    "assistant": "Asistente",
+    "profile": "Perfil",
+    "more": "Más"
   },
   "greeting": {
     "morning": "Buenos días",
@@ -37,15 +39,14 @@
     "cta": "Comenzar"
   },
   "privacyOnboarding": {
-    "title": "🛡️ Privacidad y Autonomía Absoluta",
-    "subtitle": "Nosotros diseñamos la arquitectura, tú tienes el control total.",
-    "vaultTitle": "Soberanía",
-    "vaultBody": "Eres el único dueño de tu información. Tus mazos y progreso se guardan en tu dispositivo y en tu nube personal (iCloud/Drive). Tu bóveda es tuya.",
-    "privacyTitle": "Privacidad",
-    "privacyBody": "Privacidad garantizada sin rastreos. No analizamos métricas ni recopilamos datos en segundo plano. Tu estudio es privado.",
-    "permissionTitle": "Sincronización",
-    "permissionBody": "Sincronización transparente. La app pedirá permiso de archivos única y exclusivamente para guardar tu progreso local de forma segura.",
-    "cta": "Entendido y Aceptado"
+    "title": "Bienvenido a Excellence Absolue",
+    "intro": "Para ofrecerte una experiencia fluida y personalizada, la aplicación requiere acceso a:",
+    "photosTitle": "Fototeca / Imágenes",
+    "photosBody": "Acceso a tu galería para personalizar la foto de perfil y los entornos visuales.",
+    "storageTitle": "Almacenamiento Local de Archivos",
+    "storageBody": "Acceso a tus documentos para importar, leer y procesar tus PDFs y mazos de estudio.",
+    "privacyNote": "Tus archivos y datos se procesan y almacenan de forma 100% LOCAL en este dispositivo. Ninguna información sale hacia servidores externos.",
+    "cta": "Entendido y Continuar"
   },
   "header": {
     "welcomeBack": "Te damos la bienvenida, {{name}}",
@@ -95,20 +96,31 @@
     "codeLabel": "Código de usuario",
     "copyLabel": "Copiar al portapapeles",
     "copiedLabel": "¡Copiado!",
-    "subscriptionLabel": "Suscripción",
-    "currentPlanLabel": "Plan actual",
+    "storeSectionLabel": "Tienda de Estudio",
+    "storeProductTitle": "Temas Premium",
+    "storeProductDescription": "Desbloquea los entornos fotográficos del Showroom con una compra única.",
+    "unlockThemesCta": "Desbloquear Temas Premium",
+    "restorePurchasesCta": "Restaurar Compras",
+    "themesUnlockedBadge": "Temas Premium desbloqueados",
+    "storeBusyLabel": "Procesando…",
+    "restoreEmptyMessage": "No se encontraron compras anteriores para restaurar.",
+    "purchaseErrorMessage": "No se pudo completar la compra. Inténtalo de nuevo.",
+    "subscriptionLabel": "Tienda de Estudio",
+    "currentPlanLabel": "Producto",
     "plans": {
-      "basic": "Básico",
-      "pro": "Pro"
+      "basic": "Estándar",
+      "pro": "Temas Premium",
+      "excellence": "Excellence"
     },
-    "upgradeCta": "Mejorar a Pro",
-    "manageCta": "Gestionar Suscripción",
+    "planBadgeLabel": "Edición Estándar",
+    "upgradeCta": "Desbloquear Temas Premium",
+    "manageCta": "Restaurar Compras",
     "saveLabel": "Guardar cambios",
     "preferencesSection": "Preferencias de Interfaz",
     "languageLabel": "Idioma",
     "accentColorLabel": "Color de Acento",
-    "accentColorDescription": "Elige un color libre para personalizar los acentos de toda la interfaz.",
-    "accentColorResetLabel": "Restablecer al color del tema",
+    "accentColorDescription": "Este color se guarda solo para el tema activo. Cada entorno puede tener su propio acento.",
+    "accentColorResetLabel": "Restablecer al color por defecto",
     "changePhotoLabel": "Cambiar Fotografía",
     "uiSpeedLabel": "Velocidad de Interfaz",
     "uiSpeedOptions": {
@@ -123,20 +135,13 @@
     "saveCredentialLabel": "Guardar Credencial",
     "credentialSavedLabel": "Credencial guardada en la Bóveda",
     "credentialsDisclaimer": "El procesamiento avanzado requiere su propia credencial. Las llaves se almacenan localmente y jamás se comparten.",
-    "licenseSection": "Licencia de Uso",
-    "licenseCodeLabel": "Código de licencia",
-    "licenseCodePlaceholder": "XXXX-XXXX",
-    "licenseRedeemLabel": "Canjear",
-    "licenseVipToast": "Acceso VIP Concedido. Bienvenido, Arquitecto.",
-    "licenseActiveLabel": "Licencia Pro activa",
-    "licenseInvalidLabel": "Código no válido",
-    "credentialsLockedLabel": "El motor de inteligencia personalizada es exclusivo para usuarios Pro."
+    "credentialsLockedLabel": "Disponible tras desbloquear Temas Premium."
   },
   "paywall": {
-    "title": "Función bloqueada",
-    "navLockedMessage": "Función bloqueada. Adquiera la licencia Pro para acceder al razonamiento avanzado y cartografía.",
+    "title": "Tema bloqueado",
+    "navLockedMessage": "Desbloquea Temas Premium en la Tienda de Estudio para usar este entorno.",
     "dismissLabel": "Entendido",
-    "themeLockedLabel": "Exclusivo Pro"
+    "themeLockedLabel": "Temas Premium"
   },
   "themeView": {
     "backLabel": "Volver al Perfil",
@@ -152,9 +157,34 @@
       "system": "Automático"
     }
   },
+  "librarySearch": {
+    "placeholder": "Buscar mazos, etiquetas…",
+    "label": "Buscar en la biblioteca",
+    "noResults": "No se encontraron mazos que coincidan con \"{{query}}\"",
+    "clearFilter": "Limpiar filtro"
+  },
   "flashcards": {
     "heading": "Mis Mazos",
     "createDeck": "Crear Mazo",
+    "importAnki": "Cargar mazo",
+    "importAnkiLoading": "Importando tarjetas…",
+    "importAnkiSuccess": "Mazo importado con éxito",
+    "importAnkiEmpty": "No se encontraron tarjetas importables.",
+    "importAnkiError": "No se pudo importar el texto o archivo.",
+    "importModalTitle": "Importar Tarjetas (Texto / CSV)",
+    "importModalSubtitle": "Pega filas Frente y Reverso separadas por tab, coma o |, o sube un .txt / .csv.",
+    "importDeckNameLabel": "Nombre del mazo",
+    "importPasteLabel": "Pegar texto",
+    "importPastePlaceholder": "Pregunta 1\tRespuesta 1\nPregunta 2 | Respuesta 2\nPregunta 3, Respuesta 3",
+    "importFileLabel": "O subir archivo",
+    "importFileButton": "Elegir .txt / .csv / .tsv",
+    "importConfirmButton": "Importar mazo",
+    "importAnkiHelpLink": "¿Cómo exportar tu mazo desde Anki?",
+    "importAnkiHelpTitle": "Guía rápida Anki → Texto",
+    "importAnkiHelpStep1Label": "En Anki",
+    "importAnkiHelpStep1Body": "Archivo ➔ Exportar ➔ selecciona «Notas en texto delimitado por pestañas (.txt)».",
+    "importAnkiHelpStep2Label": "En Excellence",
+    "importAnkiHelpStep2Body": "Sube el archivo .txt generado o pega el texto en la caja inferior.",
     "emptyState": "Tu bóveda de conocimiento está vacía. Crea un mazo para comenzar.",
     "newDeckName": "Nuevo Mazo",
     "editHint": "Editar nombre del mazo",
@@ -361,7 +391,23 @@
     "previewEmpty": "Encierra la respuesta entre [[dobles corchetes]] para ver el hueco.",
     "distractors": "Distractores",
     "falseOption": "Opción falsa {{n}}",
-    "saveCard": "Guardar Tarjeta"
+    "saveCard": "Guardar Tarjeta",
+    "exportButton": "Exportar",
+    "exportModalTitle": "Empaquetar Mazos",
+    "exportModalSubtitle": "Elige los mazos que quieres incluir en el archivo .easim.json.",
+    "exportSelectAll": "Seleccionar todos",
+    "exportDeselectAll": "Deseleccionar todos",
+    "exportSelectedCount": "{{count}} seleccionados",
+    "exportDeckMeta": "{{count}} tarjetas · {{folder}}",
+    "exportConfirm": "Empaquetar y guardar",
+    "exportBusy": "Empaquetando…",
+    "exportNoDecks": "Aún no hay mazos en la biblioteca.",
+    "exportEmptySelection": "Selecciona al menos un mazo para exportar.",
+    "exportError": "No se pudo guardar el archivo. Inténtalo de nuevo.",
+    "importButton": "Importar mazo",
+    "importDropHint": "Suelta el archivo .easim.json aquí",
+    "importSuccess": "{{count}} mazo(s) importado(s).",
+    "importInvalidFormat": "Formato de simulador no reconocido"
   },
   "sources": {
     "title": "Fuentes",
@@ -405,10 +451,10 @@
     "seconds": "{{s}}s"
   },
   "profileDev": {
-    "toolsTitle": "Herramientas de desarrollo",
-    "toolsBody": "Vacía localStorage, IndexedDB de media y recarga la app. Irreversible en este dispositivo.",
+    "toolsTitle": "Privacidad y Datos",
+    "toolsBody": "Tus datos se almacenan 100% de forma local en este dispositivo. Puedes restablecer la aplicación y eliminar tus archivos y configuraciones guardados en cualquier momento.",
     "resetConfirm": "¿Borrar todos los datos locales y recargar? Esta acción no se puede deshacer.",
-    "resetButton": "Borrar todos los datos (Reset)"
+    "resetButton": "Borrar Datos Locales"
   },
   "emptyStates": {
     "noDecks": "No hay mazos todavía.",

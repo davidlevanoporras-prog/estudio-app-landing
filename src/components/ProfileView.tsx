@@ -5,31 +5,20 @@ import {
   Check,
   ChevronRight,
   Copy,
-  Crown,
-  Gauge,
-  KeyRound,
   Languages,
   Lock,
   Palette,
   RotateCcw,
-  ScrollText,
-  Sparkles,
   User,
-  Waves,
-  Zap,
 } from "lucide-react";
-import { useAppStore } from "../hooks/useAppStore";
 import { languageOptions } from "../i18n/dictionary";
 import { useLanguage } from "../i18n/LanguageContext";
-import { useLicense } from "../i18n/LicenseContext";
+import { useThemeEntitlement } from "../i18n/ThemeEntitlementContext";
 import { hardResetLocalData } from "../lib/devReset";
-import { DEV_PRO_LICENSE_KEY } from "../lib/devPro";
-import { VIP_LICENSE_CODE, saveIsPremium } from "../lib/license";
-import { openExternalUrl, PRO_CHECKOUT_URL } from "../lib/openExternal";
-import { useUserStore } from "../store/userStore";
-import { VAULT_KEYS } from "../lib/vaultKeys";
-import { UI_SPEED_DURATION_MS, uiSpeedIds, type UiSpeed } from "../types/uiSpeed";
+import { fileToAvatarDataUri } from "../lib/userAvatar";
 import { useConfirm } from "./ConfirmProvider";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 
 export type SubscriptionPlan = "basic" | "pro";
 
@@ -42,82 +31,47 @@ type ProfileViewProps = {
   subscriptionPlan: SubscriptionPlan;
   profileImage: string | null;
   onProfileImageChange: (image: string | null) => void;
-  uiSpeed: UiSpeed;
-  onUiSpeedChange: (speed: UiSpeed) => void;
   /** Navega al Showroom de Apariencia (`ThemeView`) — ver Misión 2/3. */
   onOpenThemeView: () => void;
 };
 
-const UI_SPEED_ICONS: Record<UiSpeed, typeof Zap> = {
-  fast: Zap,
-  smooth: Waves,
-  luxury: Sparkles,
-};
-
 /**
- * Vista completa del perfil (ya no un modal): "Cuenta" (identidad, avatar,
- * suscripción) y "Preferencias de Interfaz" (idioma, velocidad de interfaz —
- * "El Inyector de Lujo" — y el acceso al Showroom de Apariencia, donde ahora
- * viven el tema base y el color de acento, ver `ThemeView.tsx`). Se entra
- * únicamente desde el avatar del Header (ver `DashboardLayout.tsx`) y
- * `onExit` regresa siempre al Dashboard.
+ * Vista completa del perfil: "Cuenta", "Tienda de Estudio" (IAP de temas) y
+ * "Preferencias de Interfaz" (idioma + acceso al Showroom).
  */
 export default function ProfileView({
   onExit,
   userName,
   onSaveName,
   userCode,
-  subscriptionPlan,
+  subscriptionPlan: _subscriptionPlan,
   profileImage,
   onProfileImageChange,
-  uiSpeed,
-  onUiSpeedChange,
   onOpenThemeView,
 }: ProfileViewProps) {
   const { dict, language, setLanguage } = useLanguage();
+  const {
+    hasThemesPack,
+    isBusy: isStoreBusy,
+    purchaseThemesPack,
+    restorePurchases,
+  } = useThemeEntitlement();
   const confirm = useConfirm();
-  const { isPremium, redeemLicense } = useLicense();
   const [draftName, setDraftName] = useState(userName ?? "");
   const [copied, setCopied] = useState(false);
+  const [storeFeedback, setStoreFeedback] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // BYOK — "Credenciales de Inteligencia Cognitiva": vive en la Bóveda
-  // (`VAULT_KEYS.cognitiveApiKey`). El draft local permite editar sin
-  // tocar disco hasta "Guardar Credencial".
-  const {
-    value: storedApiKey,
-    setValue: setStoredApiKey,
-    isLoading: isApiKeyLoading,
-  } = useAppStore<string>(VAULT_KEYS.cognitiveApiKey, "");
-  const [draftApiKey, setDraftApiKey] = useState("");
-  const [credentialSaved, setCredentialSaved] = useState(false);
-
-  // God Mode — código VIP (`EXCELLENCE-VIP`).
-  const [licenseCode, setLicenseCode] = useState("");
-  const [licenseError, setLicenseError] = useState(false);
-  const [showVipToast, setShowVipToast] = useState(false);
 
   useEffect(() => {
     setDraftName(userName ?? "");
   }, [userName]);
-
-  useEffect(() => {
-    if (!isApiKeyLoading) {
-      setDraftApiKey(storedApiKey);
-    }
-  }, [storedApiKey, isApiKeyLoading]);
 
   const trimmedUserName = userName?.trim() ?? "";
   const hasUserName = trimmedUserName.length > 0;
   const isNameDirty =
     draftName.trim().length > 0 && draftName.trim() !== trimmedUserName;
 
-  // `.premium-btn` / `.glow-card` (ver `index.css`) ya declaran su propia
-  // duración fija vía `transition: ... 0.2s/0.3s`, así que una clase
-  // Tailwind `duration-*` no tiene garantía de ganarles en la cascada. Un
-  // estilo en línea sí gana siempre — es la forma fiable de que todos los
-  // selectores y botones de esta vista respeten el `uiSpeed` actual.
-  const transitionStyle = { transitionDuration: `${UI_SPEED_DURATION_MS[uiSpeed]}ms` };
+  const transitionStyle = { transitionDuration: "300ms" };
 
   const handleCopyCode = async () => {
     try {
@@ -134,28 +88,7 @@ export default function ProfileView({
     onSaveName(draftName.trim());
   };
 
-  const isApiKeyDirty = draftApiKey.trim() !== storedApiKey.trim();
-
-  const handleSaveCredential = () => {
-    if (!isPremium) return;
-    setStoredApiKey(draftApiKey.trim());
-    setCredentialSaved(true);
-    window.setTimeout(() => setCredentialSaved(false), 2200);
-  };
-
-  const handleRedeemLicense = async () => {
-    setLicenseError(false);
-    const ok = await redeemLicense(licenseCode);
-    if (!ok) {
-      setLicenseError(true);
-      return;
-    }
-    setLicenseCode("");
-    setShowVipToast(true);
-    window.setTimeout(() => setShowVipToast(false), 3800);
-  };
-
-  /** Sube la foto con `URL.createObjectURL` — sin backend, 100% local. Revoca la anterior para no filtrar memoria. */
+  /** Sube la foto como Data URI Base64 persistente (`excellence_user_avatar`). */
   const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = ""; // permite volver a elegir el mismo archivo más adelante
@@ -164,36 +97,37 @@ export default function ProfileView({
     if (profileImage?.startsWith("blob:")) {
       URL.revokeObjectURL(profileImage);
     }
-    onProfileImageChange(URL.createObjectURL(file));
+
+    void fileToAvatarDataUri(file)
+      .then((dataUri) => {
+        onProfileImageChange(dataUri);
+      })
+      .catch((error) => {
+        console.error("[ProfileView] No se pudo guardar el avatar:", error);
+      });
   };
 
   return (
-    <div className="relative mx-auto flex max-w-3xl flex-col gap-8">
-      {/* Toast VIP — Silent Luxury, efímero, sin ruido comercial. */}
-      {showVipToast && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="ui-floating fixed bottom-8 left-1/2 z-50 -translate-x-1/2 rounded-lg px-5 py-3 text-sm tracking-wide shadow-2xl"
-        >
-          {dict.profile.licenseVipToast}
-        </div>
-      )}
-
-      <button
-        type="button"
-        onClick={onExit}
-        style={transitionStyle}
-        className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all hover:border-primary hover:text-foreground hover:shadow-glow-sm"
-      >
-        <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-        {dict.profile.backLabel}
-      </button>
-
-      <h2 className="text-xl font-semibold tracking-tight text-foreground">
-        {dict.profile.title}
-      </h2>
-
+    <ViewShell
+      className="mx-auto max-w-3xl"
+      header={
+        <ViewHeaderCard>
+          <button
+            type="button"
+            onClick={onExit}
+            style={transitionStyle}
+            className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all hover:border-primary hover:text-foreground hover:shadow-glow-sm"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+            {dict.profile.backLabel}
+          </button>
+          <h2 className="mt-3 text-xl font-semibold tracking-tight text-foreground">
+            {dict.profile.title}
+          </h2>
+        </ViewHeaderCard>
+      }
+      bodyClassName="flex flex-col gap-8 pb-4"
+    >
       {/* ── Sección 1: Identidad ── */}
       <section className="glow-card p-6">
         <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
@@ -301,170 +235,80 @@ export default function ProfileView({
 
         <div className="mt-5">
           <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            {dict.profile.subscriptionLabel}
+            {dict.profile.storeSectionLabel}
           </p>
-          <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-card-rest bg-background/60 p-4">
-            <div className="flex items-center gap-3">
+          <div className="mt-2 rounded-lg border border-card-rest bg-background/60 p-4">
+            <div className="flex items-start gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-card-rest bg-primary-soft text-primary">
-                <Crown className="h-5 w-5" strokeWidth={2} />
+                <Palette className="h-5 w-5" strokeWidth={2} />
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground">
-                  {dict.profile.currentPlanLabel}
+              <div className="min-w-0 flex-1">
+                <p className="text-base font-semibold text-foreground">
+                  {dict.profile.storeProductTitle}
                 </p>
-                <p className="mt-0.5 text-base font-semibold text-foreground">
-                  {dict.profile.plans[subscriptionPlan]}
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  {dict.profile.storeProductDescription}
                 </p>
               </div>
             </div>
-            <button
-              type="button"
-              onClick={() => {
-                void openExternalUrl(PRO_CHECKOUT_URL);
-              }}
-              style={transitionStyle}
-              className="premium-btn shrink-0 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all hover:border-primary hover:shadow-glow-card"
-            >
-              {subscriptionPlan === "basic"
-                ? dict.profile.upgradeCta
-                : dict.profile.manageCta}
-            </button>
-          </div>
-        </div>
-      </section>
 
-      {/* ── Sección 2: Licencia de Uso (God Mode) ── */}
-      <section className="glow-card p-6">
-        <div className="flex items-center gap-2">
-          <ScrollText className="h-4 w-4 text-icon-muted" strokeWidth={2} />
-          <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            {dict.profile.licenseSection}
-          </h3>
-        </div>
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center">
+              {hasThemesPack ? (
+                <span
+                  className="inline-flex items-center justify-center rounded-lg border border-primary/40 bg-primary-soft px-3.5 py-2.5 text-xs font-semibold tracking-wide text-primary"
+                  aria-label={dict.profile.themesUnlockedBadge}
+                >
+                  {dict.profile.themesUnlockedBadge}
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  disabled={isStoreBusy}
+                  onClick={() => {
+                    setStoreFeedback(null);
+                    void purchaseThemesPack().then((ok) => {
+                      if (!ok) {
+                        setStoreFeedback(dict.profile.purchaseErrorMessage);
+                      }
+                    });
+                  }}
+                  style={transitionStyle}
+                  className="premium-btn inline-flex flex-1 items-center justify-center rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow-sm transition-all hover:shadow-glow-card disabled:opacity-60 sm:flex-none"
+                >
+                  {isStoreBusy
+                    ? dict.profile.storeBusyLabel
+                    : dict.profile.unlockThemesCta}
+                </button>
+              )}
 
-        {isPremium ? (
-          <p className="mt-4 flex items-center gap-2 text-sm text-primary">
-            <Check className="h-4 w-4" strokeWidth={2} />
-            {dict.profile.licenseActiveLabel}
-          </p>
-        ) : (
-          <div className="mt-4">
-            <label
-              htmlFor="profile-license-code"
-              className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
-            >
-              {dict.profile.licenseCodeLabel}
-            </label>
-            <div className="mt-1.5 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <input
-                id="profile-license-code"
-                type="text"
-                autoComplete="off"
-                spellCheck={false}
-                value={licenseCode}
-                onChange={(event) => {
-                  setLicenseCode(event.target.value);
-                  setLicenseError(false);
-                }}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    void handleRedeemLicense();
-                  }
-                }}
-                placeholder={dict.profile.licenseCodePlaceholder}
-                style={transitionStyle}
-                className="w-full min-w-0 rounded-lg border border-card-rest bg-background/60 px-3 py-2.5 font-mono text-sm tracking-wider text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:shadow-glow-sm"
-              />
               <button
                 type="button"
-                onClick={() => void handleRedeemLicense()}
-                disabled={licenseCode.trim().length === 0}
+                disabled={isStoreBusy}
+                onClick={() => {
+                  setStoreFeedback(null);
+                  void restorePurchases().then((ok) => {
+                    if (!ok && !hasThemesPack) {
+                      setStoreFeedback(dict.profile.restoreEmptyMessage);
+                    }
+                  });
+                }}
                 style={transitionStyle}
-                className="premium-btn shrink-0 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-xs font-medium tracking-wide text-primary-foreground uppercase transition-all hover:border-primary hover:shadow-glow-card disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex items-center justify-center rounded-lg border border-card-rest bg-transparent px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground disabled:opacity-60"
               >
-                {dict.profile.licenseRedeemLabel}
+                {dict.profile.restorePurchasesCta}
               </button>
             </div>
-            {licenseError && (
-              <p className="mt-2 text-xs text-rose-400/90">
-                {dict.profile.licenseInvalidLabel}
+
+            {storeFeedback && (
+              <p className="mt-2 text-xs text-muted-foreground" role="status">
+                {storeFeedback}
               </p>
             )}
           </div>
-        )}
+        </div>
       </section>
 
-      {/* ── Sección 3: BYOK — Credenciales (candado financiero si !Pro) ── */}
-      <section className="glow-card relative overflow-hidden p-6">
-        <div className="flex items-center gap-2">
-          <KeyRound className="h-4 w-4 text-icon-muted" strokeWidth={2} />
-          <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            {dict.profile.credentialsSection}
-          </h3>
-        </div>
-
-        <div
-          className={[
-            "mt-4 transition-all duration-300",
-            isPremium ? "" : "pointer-events-none select-none blur-sm opacity-40",
-          ].join(" ")}
-          aria-hidden={!isPremium}
-        >
-          <label
-            htmlFor="profile-api-key"
-            className="text-xs font-medium tracking-wider text-muted-foreground uppercase"
-          >
-            {dict.profile.apiKeyLabel}
-          </label>
-          <div className="mt-1.5 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <input
-              id="profile-api-key"
-              type="password"
-              autoComplete="off"
-              spellCheck={false}
-              value={draftApiKey}
-              onChange={(event) => setDraftApiKey(event.target.value)}
-              placeholder={dict.profile.apiKeyPlaceholder}
-              disabled={isApiKeyLoading || !isPremium}
-              tabIndex={isPremium ? 0 : -1}
-              style={transitionStyle}
-              className="w-full min-w-0 rounded-lg border border-card-rest bg-background/60 px-3 py-2.5 font-mono text-sm text-foreground outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:shadow-glow-sm disabled:opacity-50"
-            />
-            <button
-              type="button"
-              onClick={handleSaveCredential}
-              disabled={!isPremium || !isApiKeyDirty || isApiKeyLoading}
-              tabIndex={isPremium ? 0 : -1}
-              style={transitionStyle}
-              className="premium-btn shrink-0 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-xs font-medium tracking-wide text-primary-foreground uppercase transition-all hover:border-primary hover:shadow-glow-card disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              {dict.profile.saveCredentialLabel}
-            </button>
-          </div>
-          {credentialSaved && (
-            <p className="mt-2 text-xs text-primary">
-              {dict.profile.credentialSavedLabel}
-            </p>
-          )}
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground">
-            {dict.profile.credentialsDisclaimer}
-          </p>
-        </div>
-
-        {!isPremium && (
-          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/55 px-6 text-center backdrop-blur-[2px]">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border border-card-rest bg-card text-muted-foreground">
-              <Lock className="h-4 w-4" strokeWidth={1.75} />
-            </div>
-            <p className="max-w-sm text-sm leading-relaxed text-secondary-foreground">
-              {dict.profile.credentialsLockedLabel}
-            </p>
-          </div>
-        )}
-      </section>
-
-      {/* ── Sección 4: Preferencias de Interfaz ── */}
+      {/* ── Preferencias de Interfaz ── */}
       <section className="glow-card p-6">
         <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
           {dict.profile.preferencesSection}
@@ -518,12 +362,27 @@ export default function ProfileView({
           style={transitionStyle}
           className="premium-btn group flex w-full items-center gap-4 rounded-xl border border-primary/50 bg-primary-soft px-5 py-4 text-left transition-all hover:border-primary hover:shadow-glow-card"
         >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/60 bg-primary text-primary-foreground shadow-glow-sm">
+          <div className="relative flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-primary/60 bg-primary text-primary-foreground shadow-glow-sm">
             <Palette className="h-5 w-5" strokeWidth={2} />
+            {!hasThemesPack && (
+              <span
+                className="absolute -right-1 -bottom-1 flex h-4 w-4 items-center justify-center rounded-full border border-primary/30 bg-background text-muted-foreground"
+                aria-hidden
+              >
+                <Lock className="h-2.5 w-2.5" strokeWidth={2.25} />
+              </span>
+            )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold tracking-wide text-primary">
-              {dict.profile.customizeButton}
+            <p className="flex items-center gap-2 text-sm font-semibold tracking-wide text-primary">
+              <span>{dict.profile.customizeButton}</span>
+              {!hasThemesPack && (
+                <Lock
+                  className="h-3.5 w-3.5 shrink-0 text-primary/55"
+                  strokeWidth={2}
+                  aria-label={dict.paywall.themeLockedLabel}
+                />
+              )}
             </p>
             <p className="mt-0.5 text-xs text-muted-foreground">
               {dict.profile.accentColorDescription}
@@ -534,111 +393,36 @@ export default function ProfileView({
             strokeWidth={2}
           />
         </button>
-
-        <div className="my-5 h-px bg-card-rest" />
-
-        {/* Velocidad de interfaz — "El Inyector de Lujo" */}
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Gauge className="h-4 w-4 text-icon-muted" strokeWidth={2} />
-            <span className="text-sm font-medium text-secondary-foreground">
-              {dict.profile.uiSpeedLabel}
-            </span>
-          </div>
-          <div
-            className="flex flex-wrap items-center gap-2"
-            role="group"
-            aria-label={dict.profile.uiSpeedLabel}
-          >
-            {uiSpeedIds.map((speed) => {
-              const isActive = uiSpeed === speed;
-              const Icon = UI_SPEED_ICONS[speed];
-              return (
-                <button
-                  key={speed}
-                  type="button"
-                  onClick={() => onUiSpeedChange(speed)}
-                  aria-pressed={isActive}
-                  style={transitionStyle}
-                  className={[
-                    "premium-btn flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all",
-                    isActive
-                      ? "border-primary bg-primary-soft text-primary shadow-glow-sm"
-                      : "border-card-rest text-secondary-foreground hover:border-primary hover:text-foreground",
-                  ].join(" ")}
-                >
-                  <Icon className="h-3.5 w-3.5" strokeWidth={2} />
-                  {dict.profile.uiSpeedOptions[speed]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </section>
 
-      {/* Modo Dev — herramientas locales (nunca en producción). */}
-      {import.meta.env.DEV && (
-        <section className="glow-card border border-rose-400/20 p-6">
-          <h3 className="text-xs font-medium tracking-wider text-rose-300/80 uppercase">
-            {dict.profileDev.toolsTitle}
-          </h3>
-          <p className="mt-2 text-xs leading-relaxed text-muted-foreground">
-            {dict.profileDev.toolsBody}
-          </p>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => {
-                void (async () => {
-                  await useUserStore
-                    .getState()
-                    .activatePro(DEV_PRO_LICENSE_KEY);
-                  await redeemLicense(VIP_LICENSE_CODE);
-                })();
-              }}
-              className="premium-btn flex items-center gap-2 rounded-lg border border-emerald-400/35 px-3 py-2 text-xs font-medium tracking-wide text-emerald-300 uppercase transition-colors hover:border-emerald-300/60 hover:text-emerald-200"
-            >
-              <Crown className="h-3.5 w-3.5" strokeWidth={2} />
-              Activar Pro (dev)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void (async () => {
-                  useUserStore.getState().deactivatePro();
-                  await saveIsPremium(false);
-                  window.location.reload();
-                })();
-              }}
-              className="premium-btn flex items-center gap-2 rounded-lg border border-amber-400/35 px-3 py-2 text-xs font-medium tracking-wide text-amber-300 uppercase transition-colors hover:border-amber-300/60 hover:text-amber-200"
-            >
-              Desactivar Pro (dev)
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                void (async () => {
-                  const ok = await confirm({
-                    confirmLabel: dict.profileDev.resetButton,
-                  });
-                  if (!ok) return;
-                  await hardResetLocalData();
-                })();
-              }}
-              className="premium-btn flex items-center gap-2 rounded-lg border border-rose-400/35 px-3 py-2 text-xs font-medium tracking-wide text-rose-300 uppercase transition-colors hover:border-rose-300/60 hover:text-rose-200"
-            >
-              <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-              {dict.profileDev.resetButton}
-            </button>
-          </div>
-          <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground/80">
-            Alternativa por terminal:{" "}
-            <code className="rounded bg-black/30 px-1.5 py-0.5 text-[10px] tracking-normal text-rose-200/90 normal-case">
-              npm run dev:pro
-            </code>
-          </p>
-        </section>
-      )}
-    </div>
+      {/* Privacidad y Datos — borrado local con confirmación. */}
+      <section className="glow-card p-6">
+        <h3 className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+          {dict.profileDev.toolsTitle}
+        </h3>
+        <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+          {dict.profileDev.toolsBody}
+        </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              void (async () => {
+                const ok = await confirm({
+                  message: dict.profileDev.resetConfirm,
+                  confirmLabel: dict.profileDev.resetButton,
+                });
+                if (!ok) return;
+                await hardResetLocalData();
+              })();
+            }}
+            className="premium-btn flex items-center gap-2 rounded-lg border border-card-rest px-3 py-2 text-xs font-medium tracking-wide text-foreground uppercase transition-colors hover:border-primary hover:text-primary"
+          >
+            <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+            {dict.profileDev.resetButton}
+          </button>
+        </div>
+      </section>
+    </ViewShell>
   );
 }

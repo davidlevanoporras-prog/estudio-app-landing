@@ -1,5 +1,4 @@
-/* Playfair Display — usada por Laboratorio / Asistente / Splash (serif de marca). */
-@import url("https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap");
+/* Tipografía de marca: serif local (sin Google Fonts — CSP / Local-First). */
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
@@ -152,13 +151,20 @@
 
 /* ── "El Laboratorio" (LaboratoryView.tsx) — Santuario de Datos ──
    Vive fuera de cualquier `[data-theme]`: estética fija de vista, no un
-   tema global. Reutiliza Playfair Display sin depender del tema activo. */
+   tema global. Serif local (Iowan/Palatino/Georgia) — sin CDN. */
 .lab-serif,
 .assistant-serif {
-  font-family: "Playfair Display", serif;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia,
+    "Times New Roman", serif;
 }
 
 /* ── Premium utilities ── */
+
+/* iOS HIG — área táctil mínima 44×44 pt. */
+@utility touch-target {
+  min-width: 44px;
+  min-height: 44px;
+}
 
 /* ── Glow card utilities ── */
 
@@ -373,7 +379,21 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: var(--background);
   color: var(--foreground);
-  transition: background-color 0.25s ease, color 0.25s ease;
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
+}
+
+/* Transición fluida de paneles al conmutar Claro/Oscuro (p. ej. Bosque Dorado). */
+.glow-card,
+.photo-glass-panel,
+aside,
+header {
+  transition:
+    background-color 0.35s ease,
+    color 0.35s ease,
+    border-color 0.35s ease;
 }
 
 /* Glow radial sutil, exclusivo de Premium Dark en modo Oscuro — en modo
@@ -387,37 +407,147 @@ body {
   );
 }
 
-/* ── Entornos fotográficos: vidrio oscuro + blur (inyectados como --cuervo) ──
-   En móvil (luz diurna, pantallas pequeñas) el fondo fotográfico no debe
-   competir con el texto médico: paneles `#0B0D0F/85` + `backdrop-blur-md`. */
-[data-theme="tema-basalto"] aside,
-[data-theme="tema-basalto"] header,
-[data-theme="tema-niebla"] aside,
-[data-theme="tema-niebla"] header,
-[data-theme="tema-fuji"] aside,
-[data-theme="tema-fuji"] header,
-[data-theme="tema-seda"] aside,
-[data-theme="tema-seda"] header,
-[data-theme="tema-sakura"] aside,
-[data-theme="tema-sakura"] header {
-  background-color: var(--cuervo);
-  border-color: var(--border);
+/* Base: paneles de cristal siempre usan tokens del tema activo. */
+.photo-glass-panel {
+  background-color: var(--card);
+  color: var(--card-foreground);
+  border-color: var(--card-border-rest);
+}
+
+/* ── Entornos fotográficos: vidrio en tarjetas de contenido ──
+   Flag `data-has-photo` (ver `applyThemeAppearance`). Sidebar/Header
+   usan tokens Claro/Oscuro; el blur protege `.glow-card` sobre la foto. */
+[data-has-photo="true"] .glow-card,
+[data-has-photo="true"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }
 
-[data-theme="tema-basalto"] .glow-card,
-[data-theme="tema-niebla"] .glow-card,
-[data-theme="tema-fuji"] .glow-card,
-[data-theme="tema-seda"] .glow-card,
-[data-theme="tema-sakura"] .glow-card,
-[data-theme="tema-basalto"] .photo-glass-panel,
-[data-theme="tema-niebla"] .photo-glass-panel,
-[data-theme="tema-fuji"] .photo-glass-panel,
-[data-theme="tema-seda"] .photo-glass-panel,
-[data-theme="tema-sakura"] .photo-glass-panel {
+/* ── Paletas custom · Modo Claro: paneles translúcidos + blur-sm ──
+   Solo superficies; acentos/botones siguen `--primary` (accentColor). */
+[data-palette="refugio-felino-light"] aside,
+[data-palette="refugio-felino-light"] header,
+[data-palette="refugio-felino-light"] .glow-card,
+[data-palette="refugio-felino-light"] .photo-glass-panel,
+[data-palette="jardin-zen-light"] aside,
+[data-palette="jardin-zen-light"] header,
+[data-palette="jardin-zen-light"] .glow-card,
+[data-palette="jardin-zen-light"] .photo-glass-panel,
+[data-palette="biblioteca-infinita-light"] aside,
+[data-palette="biblioteca-infinita-light"] header,
+[data-palette="biblioteca-infinita-light"] .glow-card,
+[data-palette="biblioteca-infinita-light"] .photo-glass-panel,
+[data-palette="bosque-dorado-light"] aside,
+[data-palette="bosque-dorado-light"] header,
+[data-palette="bosque-dorado-light"] .glow-card,
+[data-palette="bosque-dorado-light"] .photo-glass-panel,
+[data-palette="manantial-esmeralda-light"] aside,
+[data-palette="manantial-esmeralda-light"] header,
+[data-palette="manantial-esmeralda-light"] .glow-card,
+[data-palette="manantial-esmeralda-light"] .photo-glass-panel,
+[data-palette="puente-carmesi-light"] aside,
+[data-palette="puente-carmesi-light"] header,
+[data-palette="puente-carmesi-light"] .glow-card,
+[data-palette="puente-carmesi-light"] .photo-glass-panel {
   background-color: var(--card);
   border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+}
+
+/* Honor Samurai · Claro: pizarra frost + cristal blur-md. */
+[data-palette="honor-samurai-light"] aside,
+[data-palette="honor-samurai-light"] header,
+[data-palette="honor-samurai-light"] .glow-card,
+[data-palette="honor-samurai-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Mente Cósmica · Claro: Luxury Dark Glass + kintsugi oro. */
+[data-palette="mente-cosmica-light"] aside,
+[data-palette="mente-cosmica-light"] header,
+[data-palette="mente-cosmica-light"] .glow-card,
+[data-palette="mente-cosmica-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+/* Atardecer Romano · Claro: terciopelo crepuscular + oro rosa. */
+[data-palette="atardecer-romano-light"] aside,
+[data-palette="atardecer-romano-light"] header,
+[data-palette="atardecer-romano-light"] .glow-card,
+[data-palette="atardecer-romano-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Bastión Lunar · Claro: Midnight Glass + oro atenuado. */
+[data-palette="bastion-lunar-light"] aside,
+[data-palette="bastion-lunar-light"] header,
+[data-palette="bastion-lunar-light"] .glow-card,
+[data-palette="bastion-lunar-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+/* Paseo Lluvioso · Claro: Wet Slate Glass / petroleum dark. */
+[data-palette="paseo-lluvioso-light"] aside,
+[data-palette="paseo-lluvioso-light"] header,
+[data-palette="paseo-lluvioso-light"] .glow-card,
+[data-palette="paseo-lluvioso-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+
+/* Senda Sakura · Claro: crema flor de cerezo + espresso. */
+[data-palette="senda-sakura-light"] aside,
+[data-palette="senda-sakura-light"] header,
+[data-palette="senda-sakura-light"] .glow-card,
+[data-palette="senda-sakura-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* Reflejo Astral · Claro: cristal tintado uniforme (#0B0F19/80) + blur-md. */
+[data-palette="reflejo-astral-light"] aside,
+[data-palette="reflejo-astral-light"] header,
+[data-palette="reflejo-astral-light"] .glow-card,
+[data-palette="reflejo-astral-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* Gambito de Medianoche · Claro: Executive Dark Glass (warm + bronce). */
+[data-palette="gambito-medianoche-light"] aside,
+[data-palette="gambito-medianoche-light"] header {
+  background-color: var(--cuervo);
+  border-color: var(--card-border-rest);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+[data-palette="gambito-medianoche-light"] .glow-card,
+[data-palette="gambito-medianoche-light"] .photo-glass-panel {
+  background-color: var(--card);
+  border-color: var(--card-border-rest);
+  box-shadow: var(--glow-card);
   -webkit-backdrop-filter: blur(12px);
   backdrop-filter: blur(12px);
 }

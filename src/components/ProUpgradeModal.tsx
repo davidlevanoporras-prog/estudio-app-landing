@@ -1,45 +1,23 @@
-import { useState, type FormEvent } from "react";
-import { ExternalLink, Lock, Sparkles, X, Zap } from "lucide-react";
+import { Palette, X } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
-import { useUserStore } from "../store/userStore";
-
-/** Placeholder de checkout — sustituir por link real de Stripe. */
-const STRIPE_CHECKOUT_URL = "https://buy.stripe.com/test_excellence_pro";
+import { useThemeEntitlement } from "../i18n/ThemeEntitlementContext";
 
 type ProUpgradeModalProps = {
   onClose: () => void;
+  /** Opcional: navegar al Perfil / Tienda tras cerrar. */
+  onOpenStore?: () => void;
 };
 
 /**
- * Modal de venta Pro — glassmorphism + activación por clave.
+ * Aviso de contenido premium visual — sin licencias ni checkout externo.
+ * La compra real ocurre en Perfil → Tienda de Estudio (StoreKit).
  */
-export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
+export default function ProUpgradeModal({
+  onClose,
+  onOpenStore,
+}: ProUpgradeModalProps) {
   const { dict } = useLanguage();
-  const activatePro = useUserStore((s) => s.activatePro);
-  const [key, setKey] = useState("");
-  const [error, setError] = useState(false);
-  const [activating, setActivating] = useState(false);
-
-  const handleCheckout = () => {
-    window.open(STRIPE_CHECKOUT_URL, "_blank", "noopener,noreferrer");
-  };
-
-  const handleActivate = async (event: FormEvent) => {
-    event.preventDefault();
-    const trimmed = key.trim();
-    if (!trimmed) {
-      setError(true);
-      return;
-    }
-    setActivating(true);
-    setError(false);
-    try {
-      await activatePro(trimmed);
-      onClose();
-    } finally {
-      setActivating(false);
-    }
-  };
+  const { hasThemesPack, isBusy, purchaseThemesPack } = useThemeEntitlement();
 
   return (
     <div
@@ -50,96 +28,66 @@ export default function ProUpgradeModal({ onClose }: ProUpgradeModalProps) {
       onClick={onClose}
     >
       <div
-        className="glow-card relative w-full max-w-md overflow-hidden border border-amber-500/30 bg-[#0B0D0F]/85 p-7 shadow-[0_0_40px_rgba(212,165,116,0.18)] backdrop-blur-xl"
+        className="glow-card relative w-full max-w-md overflow-hidden border border-card-rest bg-background/90 p-7 backdrop-blur-xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(212,165,116,0.2),transparent_55%)]"
-        />
-
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 z-10 rounded-md p-1 text-neutral-500 transition-colors hover:text-neutral-200"
+          className="absolute top-4 right-4 z-10 rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground"
           aria-label={dict.proUpgrade.closeLabel}
         >
           <X className="h-4 w-4" strokeWidth={2} />
         </button>
 
         <div className="relative z-10">
-          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-amber-400/35 bg-amber-500/10 text-amber-300">
-            <Zap className="h-5 w-5" strokeWidth={1.75} />
+          <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl border border-primary/40 bg-primary-soft text-primary">
+            <Palette className="h-5 w-5" strokeWidth={1.75} />
           </div>
 
           <h2
             id="pro-upgrade-title"
-            className="text-xl font-semibold tracking-tight text-neutral-50"
-            style={{ fontFamily: "'Playfair Display', serif" }}
+            className="text-xl font-semibold tracking-tight text-foreground"
           >
-            {dict.proUpgrade.title}
+            {dict.profile.storeProductTitle}
           </h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {dict.profile.storeProductDescription}
+          </p>
 
-          <ul className="mt-4 space-y-2.5 text-sm text-neutral-300">
-            <li className="flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} />
-              {dict.proUpgrade.benefitAi}
-            </li>
-            <li className="flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} />
-              {dict.proUpgrade.benefitPdf}
-            </li>
-            <li className="flex items-start gap-2">
-              <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400/90" strokeWidth={2} />
-              {dict.proUpgrade.benefitHeatmap}
-            </li>
-          </ul>
-
-          <button
-            type="button"
-            onClick={handleCheckout}
-            className="premium-btn mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-amber-400/50 bg-amber-500/15 px-4 py-3 text-sm font-medium tracking-wide text-amber-100 uppercase transition-all duration-300 hover:border-amber-300/70 hover:bg-amber-500/25 hover:shadow-[0_0_24px_rgba(212,165,116,0.35)]"
-          >
-            {dict.proUpgrade.cta}
-            <ExternalLink className="h-3.5 w-3.5" strokeWidth={2} />
-          </button>
-
-          <form onSubmit={(e) => void handleActivate(e)} className="mt-6 border-t border-white/10 pt-5">
-            <label
-              htmlFor="pro-license-key"
-              className="text-[11px] font-medium tracking-wider text-neutral-500 uppercase"
+          {hasThemesPack ? (
+            <p className="mt-6 text-sm font-medium text-primary">
+              {dict.profile.themesUnlockedBadge}
+            </p>
+          ) : (
+            <button
+              type="button"
+              disabled={isBusy}
+              onClick={() => {
+                void purchaseThemesPack().then((ok) => {
+                  if (ok) onClose();
+                });
+              }}
+              className="premium-btn mt-6 flex w-full items-center justify-center rounded-lg bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground disabled:opacity-60"
             >
-              {dict.proUpgrade.keyLabel}
-            </label>
-            <div className="mt-2 flex gap-2">
-              <input
-                id="pro-license-key"
-                type="text"
-                value={key}
-                onChange={(event) => {
-                  setKey(event.target.value);
-                  setError(false);
-                }}
-                placeholder={dict.proUpgrade.keyPlaceholder}
-                spellCheck={false}
-                autoComplete="off"
-                className="min-w-0 flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-2.5 font-mono text-sm text-neutral-100 outline-none placeholder:text-neutral-600 focus:border-amber-400/40"
-              />
-              <button
-                type="submit"
-                disabled={activating || key.trim().length === 0}
-                className="premium-btn flex shrink-0 items-center gap-1.5 rounded-lg border border-primary/50 bg-primary px-3 py-2.5 text-xs font-medium tracking-wide text-primary-foreground uppercase disabled:opacity-40"
-              >
-                <Lock className="h-3 w-3" strokeWidth={2} />
-                {dict.proUpgrade.activate}
-              </button>
-            </div>
-            {error && (
-              <p className="mt-2 text-xs text-rose-300/90">
-                {dict.proUpgrade.keyError}
-              </p>
-            )}
-          </form>
+              {isBusy
+                ? dict.profile.storeBusyLabel
+                : dict.profile.unlockThemesCta}
+            </button>
+          )}
+
+          {onOpenStore && (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                onOpenStore();
+              }}
+              className="mt-3 w-full text-center text-xs font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+            >
+              {dict.profile.storeSectionLabel}
+            </button>
+          )}
         </div>
       </div>
     </div>

@@ -22,8 +22,10 @@ export const VAULT_KEYS = {
    */
   assistantMemory: "assistant_memory",
   /**
-   * Paywall / God Mode — `true` tras canjear `EXCELLENCE-VIP`
-   * (ver `lib/license.ts` y `LicenseContext`).
+   * Legacy — no usar para temas. El acceso a entornos fotográficos
+   * vive en `themesPackOwned` (IAP StoreKit).
    */
   isPremium: "license.isPremium",
+  /** Paquete no consumible de temas premium (App Store / StoreKit). */
+  themesPackOwned: "iap.themesPackOwned",
 } as const;

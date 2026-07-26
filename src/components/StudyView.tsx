@@ -3,7 +3,6 @@ import { ArrowLeft, ImagePlus, Plus, Sparkles, X } from "lucide-react";
 import { useLanguage } from "../i18n/LanguageContext";
 import { handleImagePaste } from "../lib/pasteImage";
 import { recordRatingStat, type RatingKind } from "../lib/studyStats";
-import { useFlashcardStore } from "../store/flashcardStore";
 import type { Deck, StudyCardData } from "../types/deck";
 import { saveImage } from "../utils/mediaStore";
 import {
@@ -14,7 +13,11 @@ import {
   calculateNextReview,
   type ReviewGrade,
 } from "../utils/srsAlgorithm";
+import EmptyStatePanel from "./EmptyStatePanel";
+import GlassPanel from "./GlassPanel";
 import StudyCard from "./StudyCard";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 
 let cardIdSequence = 0;
 function createCardId(): number {
@@ -51,12 +54,10 @@ export default function StudyView({
   onUpdateCard,
   onResetDeckSrs,
 }: StudyViewProps) {
-  const { dict, t } = useLanguage();
+  const { dict } = useLanguage();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
-
-  const addVaultCard = useFlashcardStore((state) => state.addCard);
 
   const allCards = deck?.cards ?? [];
   const cards = useMemo(
@@ -64,6 +65,10 @@ export default function StudyView({
     [allCards],
   );
   const currentCard = cards[currentIndex];
+  const hasActiveCards = Boolean(currentCard);
+  /** Sesión terminada: hay mazo con tarjetas, pero ninguna pendiente ahora. */
+  const sessionComplete =
+    Boolean(deck) && !hasActiveCards && allCards.length > 0;
 
   useEffect(() => {
     setCurrentIndex(0);
@@ -110,85 +115,71 @@ export default function StudyView({
       ...createInitialSrsState(),
       ...draft,
     };
+    // Solo deckStore (vía onAddCard → DashboardLayout → app_data.dat).
+    // TODO(unify-vault): no dual-write a flashcardStore / excellence_vault.json.
     onAddCard(deck.id, newCard);
-    addVaultCard(
-      draft.front,
-      draft.back,
-      deck.id,
-      draft.tag ? [draft.tag] : [],
-    );
     setIsModalOpen(false);
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={onExit}
-          className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          {dict.studyCard.backToDecks}
-        </button>
+    <ViewShell
+      header={
+        <ViewHeaderCard>
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={onExit}
+              className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
+            >
+              <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+              {dict.studyCard.backToDecks}
+            </button>
 
-        {deck && (
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2.5} />
-            {dict.studyView.addCardButton}
-          </button>
-        )}
-      </div>
-
-      <div className="flex flex-1 -translate-y-6 flex-col items-center justify-center gap-6">
-        {deck && (
-          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            {deck.name}
-          </p>
-        )}
-
-        {currentCard ? (
+            {deck && (
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(true)}
+                className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
+              >
+                <Plus className="h-4 w-4" strokeWidth={2.5} />
+                {dict.studyView.addCardButton}
+              </button>
+            )}
+          </div>
+        </ViewHeaderCard>
+      }
+      bodyClassName={[
+        "flex min-h-full w-full flex-col items-center justify-center overflow-x-hidden px-1 pb-8 sm:px-0",
+        hasActiveCards ? "gap-5" : "gap-6",
+      ].join(" ")}
+    >
+      {hasActiveCards ? (
+        <div className="flex w-full max-w-full flex-col items-center gap-5 px-0 sm:px-2">
           <StudyCard
-            key={currentCard.id}
-            card={currentCard}
+            key={currentCard!.id}
+            card={currentCard!}
             isFlipped={isFlipped}
             onFlip={handleFlip}
           />
-        ) : deck && allCards.length === 0 ? (
-          <EmptyDeckState onAddCard={() => setIsModalOpen(true)} />
-        ) : deck ? (
-          <AllCaughtUpState />
-        ) : null}
-
-        {currentCard && isFlipped && <TacticalCommandCenter onRate={handleRate} />}
-
-        {deck && cards.length > 0 && (
-          <p
-            role="status"
-            aria-label={dict.studyView.queueCounterLabel}
-            className="text-sm font-medium tabular-nums text-muted-foreground"
+          {/* Hueco fijo: evita que la tarjeta salte al aparecer el mando SM-2. */}
+          <div
+            className={[
+              "flex min-h-[3.75rem] w-full max-w-[calc(56rem-0.75rem)] items-center justify-center",
+              isFlipped ? "visible" : "invisible pointer-events-none",
+            ].join(" ")}
+            aria-hidden={!isFlipped}
           >
-            {t(dict.studyView.progressLabel, {
-              current: currentIndex + 1,
-              total: cards.length,
-            })}
-          </p>
-        )}
-
-        {deck && allCards.length > 0 && (
-          <button
-            type="button"
-            onClick={() => onResetDeckSrs(deck.id)}
-            className="text-xs font-medium text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors duration-300 hover:text-primary"
-          >
-            {dict.studyView.resetDeckButton}
-          </button>
-        )}
-      </div>
+            <TacticalCommandCenter onRate={handleRate} />
+          </div>
+        </div>
+      ) : deck && allCards.length === 0 ? (
+        <EmptyDeckState onAddCard={() => setIsModalOpen(true)} />
+      ) : sessionComplete && deck ? (
+        <AllCaughtUpState
+          deckName={deck.name}
+          onReset={() => onResetDeckSrs(deck.id)}
+        />
+      ) : null}
 
       {deck && (
         <AddCardModal
@@ -197,16 +188,13 @@ export default function StudyView({
           onSave={handleSaveCard}
         />
       )}
-    </div>
+    </ViewShell>
   );
 }
 
 /**
- * "El Centro de Mando Táctico" — 4 botones minimalistas, uno por calidad
- * SM-2. Solo se monta cuando la tarjeta ya está volteada (ver el `&&` en el
- * llamador), así que su entrada suave (`tactical-command-in`, ver
- * `src/index.css`) es lo único que "anima" su aparición — nunca estuvo
- * oculto en el DOM esperando a mostrarse.
+ * "El Centro de Mando Táctico" — 4 botones SM-2.
+ * El padre reserva altura fija; aquí solo cambia la visibilidad.
  */
 function TacticalCommandCenter({
   onRate,
@@ -216,7 +204,7 @@ function TacticalCommandCenter({
   const { dict } = useLanguage();
 
   return (
-    <div className="tactical-command-in flex flex-wrap items-center justify-center gap-3">
+    <GlassPanel className="flex flex-wrap items-center justify-center gap-3 px-4 py-3">
       <button
         type="button"
         onClick={() => onRate(1)}
@@ -245,7 +233,7 @@ function TacticalCommandCenter({
       >
         {dict.studyCard.rateEasy}
       </button>
-    </div>
+    </GlassPanel>
   );
 }
 
@@ -255,23 +243,35 @@ function TacticalCommandCenter({
  * distinto de `EmptyDeckState` (mazo sin tarjetas en absoluto), para que el
  * usuario entienda que su progreso está intacto, no perdido.
  */
-function AllCaughtUpState() {
+function AllCaughtUpState({
+  deckName,
+  onReset,
+}: {
+  deckName: string;
+  onReset: () => void;
+}) {
   const { dict } = useLanguage();
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-card-rest px-10 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-        <Sparkles className="h-6 w-6" strokeWidth={1.75} />
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-foreground">
-          {dict.studyView.allCaughtUpTitle}
-        </p>
-        <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          {dict.studyView.allCaughtUpDescription}
-        </p>
-      </div>
-    </div>
+    <EmptyStatePanel
+      icon={<Sparkles className="h-6 w-6" strokeWidth={1.75} />}
+      title={dict.studyView.allCaughtUpTitle}
+      description={dict.studyView.allCaughtUpDescription}
+      action={
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+            {deckName}
+          </p>
+          <button
+            type="button"
+            onClick={onReset}
+            className="text-xs font-medium text-muted-foreground underline decoration-dotted underline-offset-4 transition-colors duration-300 hover:text-primary"
+          >
+            {dict.studyView.resetDeckButton}
+          </button>
+        </div>
+      }
+    />
   );
 }
 
@@ -279,27 +279,21 @@ function EmptyDeckState({ onAddCard }: { onAddCard: () => void }) {
   const { dict } = useLanguage();
 
   return (
-    <div className="flex flex-col items-center gap-4 rounded-lg border border-dashed border-card-rest px-10 py-16 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-        <Sparkles className="h-6 w-6" strokeWidth={1.75} />
-      </div>
-      <div>
-        <p className="text-sm font-semibold text-foreground">
-          {dict.studyView.emptyDeckTitle}
-        </p>
-        <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          {dict.studyView.emptyDeckDescription}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onAddCard}
-        className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
-      >
-        <Plus className="h-4 w-4" strokeWidth={2.5} />
-        {dict.studyView.addCardButton}
-      </button>
-    </div>
+    <EmptyStatePanel
+      icon={<Sparkles className="h-6 w-6" strokeWidth={1.75} />}
+      title={dict.studyView.emptyDeckTitle}
+      description={dict.studyView.emptyDeckDescription}
+      action={
+        <button
+          type="button"
+          onClick={onAddCard}
+          className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
+        >
+          <Plus className="h-4 w-4" strokeWidth={2.5} />
+          {dict.studyView.addCardButton}
+        </button>
+      }
+    />
   );
 }
 

@@ -42,8 +42,21 @@ function isRatingCounts(value: unknown): value is RatingCounts {
   );
 }
 
+function sanitizeCount(value: unknown): number {
+  return typeof value === "number" && Number.isFinite(value) && value > 0
+    ? Math.floor(value)
+    : 0;
+}
+
 function normalizeRatingCounts(value: RatingCounts): RatingCounts {
-  return { ...value, good: typeof value.good === "number" ? value.good : 0 };
+  return {
+    again: sanitizeCount(value.again),
+    hard: sanitizeCount(value.hard),
+    good: sanitizeCount(
+      typeof value.good === "number" ? value.good : 0,
+    ),
+    easy: sanitizeCount(value.easy),
+  };
 }
 
 /** Lee las estadísticas acumuladas (global + por mazo), con defaults seguros. */

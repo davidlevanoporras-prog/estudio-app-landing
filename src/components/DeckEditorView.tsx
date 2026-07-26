@@ -25,6 +25,10 @@ import {
 } from "../types/deck";
 import ConfirmDialog from "./ConfirmDialog";
 import { useConfirm } from "./ConfirmProvider";
+import EmptyStatePanel from "./EmptyStatePanel";
+import GlassPanel from "./GlassPanel";
+import ViewHeaderCard from "./ViewHeaderCard";
+import ViewShell from "./ViewShell";
 
 let cardIdSequence = 0;
 function createCardId(): number {
@@ -162,83 +166,86 @@ export default function DeckEditorView({
   };
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={handleExit}
-          className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
-        >
-          <ArrowLeft className="h-4 w-4" strokeWidth={2} />
-          {dict.studyCard.backToDecks}
-        </button>
+    <ViewShell
+      header={
+        <ViewHeaderCard>
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <button
+            type="button"
+            onClick={handleExit}
+            className="premium-btn flex w-fit items-center gap-2 self-start rounded-lg border border-transparent px-2 py-1.5 text-sm font-medium text-secondary-foreground transition-all duration-300 hover:border-primary hover:text-foreground hover:shadow-glow-sm"
+          >
+            <ArrowLeft className="h-4 w-4" strokeWidth={2} />
+            {dict.studyCard.backToDecks}
+          </button>
 
-        {deck && (
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-sm font-semibold text-foreground">{deck.name}</p>
-              <p className="text-xs text-muted-foreground">
-                {t(dict.deckEditor.subtitle, { count: draftCards.length })}
-              </p>
+          {deck && (
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <p className="text-sm font-semibold text-foreground">
+                  {deck.name}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {t(dict.deckEditor.subtitle, { count: draftCards.length })}
+                </p>
+              </div>
+              {isDirty && (
+                <span
+                  title={dict.deckEditor.unsavedIndicator}
+                  aria-label={dict.deckEditor.unsavedIndicator}
+                  className="flex h-2 w-2 shrink-0 rounded-full bg-primary shadow-glow-sm"
+                />
+              )}
+              <button
+                type="button"
+                onClick={() => setShowDeleteDeckConfirm(true)}
+                className="premium-btn flex items-center gap-2 rounded-lg border border-rose-500/25 px-3 py-2 text-xs font-medium tracking-wide text-rose-400/90 uppercase transition-all duration-300 hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-300"
+              >
+                <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
+                {dict.deckEditor.deleteDeckButton}
+              </button>
             </div>
-            {isDirty && (
-              <span
-                title={dict.deckEditor.unsavedIndicator}
-                aria-label={dict.deckEditor.unsavedIndicator}
-                className="flex h-2 w-2 shrink-0 rounded-full bg-primary shadow-glow-sm"
-              />
-            )}
-            <button
-              type="button"
-              onClick={() => setShowDeleteDeckConfirm(true)}
-              className="premium-btn flex items-center gap-2 rounded-lg border border-rose-500/25 px-3 py-2 text-xs font-medium tracking-wide text-rose-400/90 uppercase transition-all duration-300 hover:border-rose-500/60 hover:bg-rose-500/10 hover:text-rose-300"
-            >
-              <Trash2 className="h-3.5 w-3.5" strokeWidth={2} />
-              {dict.deckEditor.deleteDeckButton}
-            </button>
-          </div>
-        )}
-      </div>
-
+          )}
+        </div>
+        </ViewHeaderCard>
+      }
+      bodyClassName="space-y-4 pb-28"
+    >
       {!deck ? (
         <DeckNotFoundState onExit={onExit} />
       ) : (
         <>
-          <div className="flex-1 space-y-4 overflow-y-auto pb-24">
-            {draftCards.map((card, index) => (
-              <CardEditorRow
-                key={card.id}
-                card={card}
-                index={index}
-                onFieldChange={(patch) => updateCard(card.id, patch)}
-                onImageUpload={(slot, file) =>
-                  handleImageUpload(card, slot, file)
-                }
-                onImageRemove={(slot) => handleImageRemove(card, slot)}
-                onDelete={() => handleDeleteCard(card)}
-              />
-            ))}
+          {draftCards.map((card, index) => (
+            <CardEditorRow
+              key={card.id}
+              card={card}
+              index={index}
+              onFieldChange={(patch) => updateCard(card.id, patch)}
+              onImageUpload={(slot, file) =>
+                handleImageUpload(card, slot, file)
+              }
+              onImageRemove={(slot) => handleImageRemove(card, slot)}
+              onDelete={() => handleDeleteCard(card)}
+            />
+          ))}
 
-            {draftCards.length === 0 && (
-              <div className="flex flex-col items-center justify-center gap-3 rounded-lg border border-dashed border-card-rest py-16 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-                  <Layers className="h-5 w-5" strokeWidth={1.75} />
-                </div>
-                <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
-                  {dict.deckEditor.emptyDeckDescription}
-                </p>
-              </div>
-            )}
+          {draftCards.length === 0 && (
+            <EmptyStatePanel
+              icon={<Layers className="h-5 w-5" strokeWidth={1.75} />}
+              description={dict.deckEditor.emptyDeckDescription}
+            />
+          )}
 
+          <GlassPanel dashed>
             <button
               type="button"
               onClick={handleAddCard}
-              className="premium-btn flex w-full items-center justify-center gap-2 rounded-lg border border-dashed border-card-rest py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:border-primary hover:text-primary"
+              className="premium-btn flex w-full items-center justify-center gap-2 py-3 text-sm font-medium text-muted-foreground transition-all duration-300 hover:text-primary"
             >
               <Plus className="h-4 w-4" strokeWidth={2} />
               {dict.deckEditor.addCardButton}
             </button>
-          </div>
+          </GlassPanel>
 
           <button
             type="button"
@@ -263,7 +270,7 @@ export default function DeckEditorView({
           onCancel={() => setShowDeleteDeckConfirm(false)}
         />
       )}
-    </div>
+    </ViewShell>
   );
 }
 
@@ -271,27 +278,21 @@ function DeckNotFoundState({ onExit }: { onExit: () => void }) {
   const { dict } = useLanguage();
 
   return (
-    <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-      <div className="flex h-14 w-14 items-center justify-center rounded-full border border-card-rest bg-card text-icon-muted">
-        <AlertCircle className="h-6 w-6" strokeWidth={1.75} />
-      </div>
-      <div>
-        <p className="text-base font-semibold text-foreground">
-          {dict.deckEditor.deckNotFoundTitle}
-        </p>
-        <p className="mt-1 max-w-sm text-sm leading-relaxed text-muted-foreground">
-          {dict.deckEditor.deckNotFoundDescription}
-        </p>
-      </div>
-      <button
-        type="button"
-        onClick={onExit}
-        className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
-      >
-        <ArrowLeft className="h-4 w-4" strokeWidth={2.5} />
-        {dict.studyCard.backToDecks}
-      </button>
-    </div>
+    <EmptyStatePanel
+      icon={<AlertCircle className="h-6 w-6" strokeWidth={1.75} />}
+      title={dict.deckEditor.deckNotFoundTitle}
+      description={dict.deckEditor.deckNotFoundDescription}
+      action={
+        <button
+          type="button"
+          onClick={onExit}
+          className="premium-btn flex items-center gap-2 rounded-lg border border-primary/60 bg-primary px-4 py-2.5 text-sm font-medium tracking-wide text-primary-foreground uppercase transition-all duration-300 hover:border-primary hover:shadow-glow-card"
+        >
+          <ArrowLeft className="h-4 w-4" strokeWidth={2.5} />
+          {dict.studyCard.backToDecks}
+        </button>
+      }
+    />
   );
 }
 

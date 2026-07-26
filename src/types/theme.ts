@@ -1,6 +1,5 @@
 /**
- * Modo de iluminación — gobierna solo "Interfaz Clásica".
- * Los entornos fotográficos Premium lo ignoran (inmunidad).
+ * Modo de iluminación — Claro / Oscuro / Auto (tokens de UI globales).
  */
 export type ThemeMode = "light" | "dark" | "auto";
 
