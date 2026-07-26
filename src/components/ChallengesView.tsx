@@ -607,7 +607,7 @@ export default function ChallengesView() {
               event.preventDefault();
               handleCreate();
             }}
-            className="glow-card flex items-center gap-2 p-2.5 transition-all duration-300"
+            className="glow-card relative z-50 flex items-center gap-2 overflow-visible p-2.5 transition-all duration-300"
           >
             <input
               type="text"
@@ -724,26 +724,14 @@ function DatePopover({
   const recurrenceLabels =
     recurrenceLabelsByLanguage[language] ?? recurrenceLabelsByLanguage.es;
   const [isOpen, setIsOpen] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handlePointerDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [isOpen]);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   const hasRecurrence = recurrence !== "none";
 
   return (
-    <div ref={containerRef} className="relative shrink-0">
+    <div className="relative z-50 shrink-0 overflow-visible">
       <button
+        ref={triggerRef}
         type="button"
         onClick={() => setIsOpen((current) => !current)}
         aria-haspopup="dialog"
@@ -769,51 +757,51 @@ function DatePopover({
         {hasRecurrence && <Repeat className="h-3 w-3" strokeWidth={2.25} />}
       </button>
 
-      {isOpen && (
-        <div
-          role="dialog"
-          aria-label={texts.trigger}
-          className="ui-floating absolute right-0 top-full z-10 mt-2 flex overflow-hidden rounded-lg"
-        >
-          {/* Columna izquierda (Misión 2): lista estricta, siempre la misma sin importar el modo activo. */}
-          <div className="flex w-32 shrink-0 flex-col gap-0.5 p-2">
-            {RECURRENCE_VALUES.map((value) => {
-              const isSelected = recurrence === value;
-              return (
-                <button
-                  key={value}
-                  type="button"
-                  onClick={() => onRecurrenceChange(value)}
-                  aria-pressed={isSelected}
-                  className={[
-                    "rounded-md px-2.5 py-2 text-left text-sm font-medium transition-colors duration-200",
-                    isSelected
-                      ? "bg-primary-soft text-primary"
-                      : "text-secondary-foreground hover:bg-primary-soft hover:text-primary",
-                  ].join(" ")}
-                >
-                  {recurrenceLabels[value]}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Columna derecha (Misión 3): "el panel mutante" — inset temático. */}
-          <div className="w-60 shrink-0 border-l border-card-rest bg-background/70 p-3">
-            <MutantPanel
-              recurrence={recurrence}
-              exactDate={exactDate}
-              selectedWeekDays={selectedWeekDays}
-              selectedMonthDays={selectedMonthDays}
-              onExactDateChange={onExactDateChange}
-              onToggleWeekDay={onToggleWeekDay}
-              onToggleMonthDay={onToggleMonthDay}
-              texts={texts}
-              language={language}
-            />
-          </div>
+      {/* Portal a <body>: evita clipping del empty state / scroll del ViewShell. */}
+      <PortalMenu
+        open={isOpen}
+        anchorRef={triggerRef}
+        onClose={() => setIsOpen(false)}
+        role="dialog"
+        padded={false}
+        className="flex overflow-hidden"
+      >
+        <div className="flex w-32 shrink-0 flex-col gap-0.5 p-2">
+          {RECURRENCE_VALUES.map((value) => {
+            const isSelected = recurrence === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onRecurrenceChange(value)}
+                aria-pressed={isSelected}
+                className={[
+                  "rounded-md px-2.5 py-2 text-left text-sm font-medium transition-colors duration-200",
+                  isSelected
+                    ? "bg-primary-soft text-primary"
+                    : "text-secondary-foreground hover:bg-primary-soft hover:text-primary",
+                ].join(" ")}
+              >
+                {recurrenceLabels[value]}
+              </button>
+            );
+          })}
         </div>
-      )}
+
+        <div className="w-60 shrink-0 border-l border-card-rest bg-background/70 p-3">
+          <MutantPanel
+            recurrence={recurrence}
+            exactDate={exactDate}
+            selectedWeekDays={selectedWeekDays}
+            selectedMonthDays={selectedMonthDays}
+            onExactDateChange={onExactDateChange}
+            onToggleWeekDay={onToggleWeekDay}
+            onToggleMonthDay={onToggleMonthDay}
+            texts={texts}
+            language={language}
+          />
+        </div>
+      </PortalMenu>
     </div>
   );
 }

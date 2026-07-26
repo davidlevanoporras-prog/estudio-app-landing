@@ -28,10 +28,11 @@ export default function ViewShell({
         .filter(Boolean)
         .join(" ")}
     >
-      <div className="shrink-0">{header}</div>
+      {/* z-50: popovers de la cabecera (p. ej. fecha en Desafíos) quedan sobre el body. */}
+      <div className="relative z-50 shrink-0 overflow-visible">{header}</div>
       <div
         className={[
-          "ui-scrollbar mt-6 min-h-0 flex-1 overflow-y-auto pb-16",
+          "ui-scrollbar relative z-0 mt-6 min-h-0 flex-1 overflow-y-auto pb-16",
           bodyClassName,
         ]
           .filter(Boolean)

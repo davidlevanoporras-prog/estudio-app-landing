@@ -325,7 +325,7 @@ export default function FlashcardsView({
       {toast && (
         <div
           className={[
-            "fixed bottom-20 left-1/2 z-[95] max-w-md -translate-x-1/2 rounded-lg border px-4 py-3 text-sm font-medium shadow-2xl md:bottom-8",
+            "fixed bottom-8 left-1/2 z-[95] max-w-md -translate-x-1/2 rounded-lg border px-4 py-3 text-sm font-medium shadow-2xl",
             toast.tone === "success"
               ? "border-emerald-500/40 bg-emerald-950/90 text-emerald-100"
               : "border-rose-500/40 bg-rose-950/90 text-rose-100",

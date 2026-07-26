@@ -51,9 +51,6 @@ import DeckEditorView from "./DeckEditorView";
 import FlashcardsView from "./FlashcardsView";
 import GlassPanel from "./GlassPanel";
 import LaboratoryView from "./LaboratoryView";
-import MobileBottomNav, {
-  type MobileNavTabId,
-} from "./MobileBottomNav";
 import ProfileView, { type SubscriptionPlan } from "./ProfileView";
 import SourcesView from "./SourcesView";
 import StudyView from "./StudyView";
@@ -198,9 +195,6 @@ export default function DashboardLayout({
   const { dict, t } = useLanguage();
   const { isPremium } = useLicense();
   const { hasThemesPack } = useThemeEntitlement();
-  /** Drawer del Sidebar en viewport móvil (< md). En desktop el aside es fijo. */
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
-
   const [userCode] = useState("#USR-9982");
   /** Edición estándar — sin upsell ni candados (Mac App Store). */
   const subscriptionPlan: SubscriptionPlan = "basic";
@@ -311,32 +305,6 @@ export default function DashboardLayout({
       setActiveView("dashboard");
     }
   }, [isPremium, activeView]);
-
-  // Cierra el drawer al cambiar de vista (navegación desde el menú móvil).
-  useEffect(() => {
-    setIsMobileNavOpen(false);
-  }, [activeView]);
-
-  // Al pasar a desktop, el drawer deja de tener sentido — lo cerramos.
-  useEffect(() => {
-    if (typeof window === "undefined" || !window.matchMedia) return;
-    const media = window.matchMedia("(min-width: 768px)");
-    const handleChange = (event: MediaQueryListEvent) => {
-      if (event.matches) setIsMobileNavOpen(false);
-    };
-    media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
-  }, []);
-
-  // Evita scroll del body detrás del drawer en móvil.
-  useEffect(() => {
-    if (!isMobileNavOpen) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = previous;
-    };
-  }, [isMobileNavOpen]);
 
   // Auto: sigue prefers-color-scheme en vivo.
   useEffect(() => {
@@ -582,48 +550,15 @@ export default function DashboardLayout({
   return (
     <div
       className={[
-        // Fondos fotográficos: cover/center/no-repeat (también en style inline).
-        // `bg-fixed` solo desde md — en iOS móvil fixed backgrounds se rompen.
-        "flex h-dvh w-full overflow-hidden bg-cover bg-center bg-no-repeat transition-all duration-700 ease-in-out md:bg-fixed",
-        "flex-col text-foreground md:flex-row",
+        // Desktop & iPad First — sin layouts de teléfono; suelo iPad (≥768px).
+        "flex h-dvh w-full min-w-[768px] flex-row overflow-hidden bg-cover bg-center bg-fixed bg-no-repeat text-foreground transition-all duration-700 ease-in-out",
       ].join(" ")}
       style={rootBackgroundStyle}
     >
-      {/* Scrim del drawer móvil — no compite en desktop. */}
-      {isMobileNavOpen && (
-        <button
-          type="button"
-          aria-label={dict.sidebar.closeMenuLabel}
-          className="fixed inset-0 z-40 bg-[#0B0D0F]/55 backdrop-blur-sm md:hidden"
-          onClick={() => setIsMobileNavOpen(false)}
-        />
-      )}
-
-      {/* Bottom nav iOS — Dashboard / Flashcards / Sources / Profile / Más. */}
-      <MobileBottomNav
-        activeView={activeView}
-        isMoreOpen={isMobileNavOpen}
-        onSelect={(tab: MobileNavTabId) => {
-          if (tab === "more") {
-            setIsMobileNavOpen((open) => !open);
-            return;
-          }
-          setIsMobileNavOpen(false);
-          setActiveView(tab);
-        }}
-      />
-
-      {/* Sidebar — drawer off-canvas en móvil; columna fija desde `md:`.
-          `md:overflow-visible`: el flyout hover del Asistente no se recorta. */}
+      {/* Sidebar fijo — siempre visible en Desktop / iPad. */}
       <aside
         id="app-sidebar"
-        className={[
-          "flex flex-col border-wenge-border-subtle bg-cuervo",
-          "fixed inset-y-0 left-0 z-50 w-[min(18rem,85vw)] border-r transition-transform duration-300 ease-in-out",
-          "pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]",
-          isMobileNavOpen ? "translate-x-0" : "-translate-x-full",
-          "md:relative md:z-30 md:h-screen md:w-64 md:shrink-0 md:translate-x-0 md:overflow-visible md:pt-0 md:pb-0",
-        ].join(" ")}
+        className="relative z-30 flex h-screen w-64 shrink-0 flex-col overflow-visible border-r border-wenge-border-subtle bg-cuervo"
       >
         <div className="flex h-16 shrink-0 items-center gap-3 border-b border-wenge-border-subtle px-6">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg border border-card-rest bg-card text-primary transition-all duration-300 hover:border-primary hover:shadow-glow-card">
@@ -639,7 +574,7 @@ export default function DashboardLayout({
           </div>
         </div>
 
-        <nav className="flex flex-1 flex-col gap-5 overflow-y-auto overflow-x-visible p-4 md:overflow-visible">
+        <nav className="flex flex-1 flex-col gap-5 overflow-x-visible overflow-y-auto p-4">
           {navGroups.map(({ titleKey, items }, groupIndex) => (
             <div
               key={titleKey}
@@ -664,7 +599,7 @@ export default function DashboardLayout({
                     type="button"
                     onClick={() => setActiveView(id)}
                     className={[
-                      "touch-target group flex w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap",
+                      "touch-target group flex min-h-[44px] w-full items-center gap-3 px-3 py-2.5 text-left text-sm font-medium whitespace-nowrap",
                       isActive
                         ? "rounded-lg border border-primary bg-primary-soft text-primary shadow-glow-sm transition-all duration-300"
                         : "glow-card-nav text-secondary-foreground hover:text-foreground",
@@ -713,7 +648,7 @@ export default function DashboardLayout({
       {/* Main area — cabecera app fija; el scroll vive dentro de cada vista */}
       <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
         {/* Header */}
-        <header className="flex min-h-16 shrink-0 items-center justify-between border-b border-wenge-border-subtle bg-cuervo px-4 pt-[env(safe-area-inset-top)] md:px-8 md:pt-0">
+        <header className="flex min-h-16 shrink-0 items-center justify-between border-b border-wenge-border-subtle bg-cuervo px-8">
           <div>
             <p className="text-sm text-muted-foreground">{greeting}</p>
             <h1 className="text-lg font-semibold tracking-tight text-foreground">
@@ -764,7 +699,7 @@ export default function DashboardLayout({
                   // `w-max`: caben Eye + Play/Pause + Reset con touch-target 44px
                   // (el antiguo `w-44` recortaba RotateCcw con overflow-hidden).
                   isTimerVisible
-                    ? "w-max max-w-full gap-0.5 px-2 py-1 sm:gap-1.5 sm:px-3 sm:py-1.5"
+                    ? "w-max max-w-full gap-1.5 px-3 py-1.5"
                     : "w-10 cursor-pointer justify-center px-0 py-1.5 hover:text-primary",
                 ].join(" ")}
               >
@@ -854,7 +789,7 @@ export default function DashboardLayout({
               className="touch-target premium-btn flex items-center gap-3 rounded-full border border-transparent py-1 pl-3 pr-1 transition-all duration-300 hover:border-primary hover:shadow-glow-card"
               aria-label={dict.header.goToProfileLabel}
             >
-              <span className="hidden text-right sm:block">
+              <span className="text-right">
                 <p className="text-sm font-medium text-foreground">
                   {hasUserName ? trimmedUserName : dict.header.guestLabel}
                 </p>
@@ -888,9 +823,7 @@ export default function DashboardLayout({
             Overflow aquí es `hidden`: cada vista usa `ViewShell`. */}
         <main
           className={[
-            "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden p-4 transition-opacity",
-            // Hueco para bottom nav + home indicator iOS.
-            "pb-[calc(4.75rem+env(safe-area-inset-bottom))] md:p-8 md:pb-8",
+            "flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-hidden p-8 transition-opacity",
             transitionDurationClass,
             isViewVisible ? "opacity-100" : "opacity-0",
           ].join(" ")}

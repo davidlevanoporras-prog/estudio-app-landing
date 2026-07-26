@@ -10,7 +10,7 @@ import { createPortal } from "react-dom";
 
 type PortalMenuProps = {
   open: boolean;
-  /** Ancla del menú (botón kebab). */
+  /** Ancla del menú (botón kebab / disparador). */
   anchorRef: RefObject<HTMLElement | null>;
   onClose: () => void;
   /** Clases del panel flotante (sin posicionamiento). */
@@ -18,6 +18,10 @@ type PortalMenuProps = {
   children: ReactNode;
   /** Alineación horizontal respecto al ancla. */
   align?: "start" | "end";
+  /** Rol ARIA del panel (menú kebab vs diálogo de fecha). */
+  role?: "menu" | "dialog";
+  /** Padding interior por defecto (`p-1.5`). Desactivar para paneles compuestos. */
+  padded?: boolean;
 };
 
 /**
@@ -31,6 +35,8 @@ export function PortalMenu({
   className = "",
   children,
   align = "end",
+  role = "menu",
+  padded = true,
 }: PortalMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(
@@ -50,6 +56,7 @@ export function PortalMenu({
 
       const rect = anchor.getBoundingClientRect();
       const menuWidth = menu?.offsetWidth ?? 176;
+      const menuHeight = menu?.offsetHeight ?? 0;
       const gap = 8;
       const left =
         align === "end"
@@ -59,10 +66,14 @@ export function PortalMenu({
             )
           : Math.min(rect.left, window.innerWidth - menuWidth - 8);
 
-      setCoords({
-        top: Math.min(rect.bottom + gap, window.innerHeight - 8),
-        left,
-      });
+      const below = rect.bottom + gap;
+      const fitsBelow =
+        menuHeight === 0 || below + menuHeight <= window.innerHeight - 8;
+      const top = fitsBelow
+        ? below
+        : Math.max(8, rect.top - gap - menuHeight);
+
+      setCoords({ top, left });
     };
 
     update();
@@ -103,9 +114,10 @@ export function PortalMenu({
   return createPortal(
     <div
       ref={menuRef}
-      role="menu"
+      role={role}
       className={[
-        "ui-floating fixed z-[100] rounded-lg p-1.5",
+        "ui-floating fixed z-[100] rounded-lg",
+        padded ? "p-1.5" : "",
         className,
       ]
         .filter(Boolean)

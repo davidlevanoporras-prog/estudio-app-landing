@@ -160,7 +160,7 @@
 
 /* ── Premium utilities ── */
 
-/* iOS HIG — área táctil mínima 44×44 pt. */
+/* Desktop & iPad First — HIG touch 44×44 pt (dedo / Apple Pencil). Sin layouts de teléfono. */
 @utility touch-target {
   min-width: 44px;
   min-height: 44px;
