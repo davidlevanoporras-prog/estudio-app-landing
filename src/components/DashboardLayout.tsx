@@ -22,6 +22,8 @@ import { useThemeEntitlement } from "../i18n/ThemeEntitlementContext";
 import { loadDecks, saveDecks } from "../lib/deckStore";
 import { removeDeckStats } from "../lib/studyStats";
 import { loadGlobalTimer, saveGlobalTimer } from "../lib/time";
+import { PRIVACY_POLICY_URL } from "../lib/legalUrls";
+import { openExternalUrl } from "../lib/openExternal";
 import {
   persistUserAvatar,
   readUserAvatar,
@@ -642,6 +644,17 @@ export default function DashboardLayout({
                 : dict.profile.plans.basic}
             </p>
           </div>
+
+          {/* App Store Guideline 5.1.1 — Privacy Policy accesible in-app. */}
+          <button
+            type="button"
+            onClick={() => {
+              void openExternalUrl(PRIVACY_POLICY_URL);
+            }}
+            className="touch-target mt-3 flex w-full items-center justify-center rounded-md px-2 text-xs text-stone-400 transition-colors hover:text-stone-700 dark:hover:text-stone-300"
+          >
+            {dict.sidebar.privacyPolicyLabel}
+          </button>
         </div>
       </aside>
 

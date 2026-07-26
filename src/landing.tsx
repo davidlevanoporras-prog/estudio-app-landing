@@ -1,7 +1,12 @@
 import { useEffect, useState } from "react";
-import { normalizePath, type LandingPath } from "./landing/constants";
+import {
+  normalizePath,
+  type LandingPath,
+  type LegalDocId,
+} from "./landing/constants";
 import HomePage from "./landing/HomePage";
 import { PrivacyPage, SupportPage, TermsPage } from "./landing/LegalPages";
+import LegalModal from "./landing/LegalModal";
 import { SiteChrome } from "./landing/SiteChrome";
 import "./landing/landing.css";
 
@@ -21,11 +26,16 @@ function pageTitle(path: LandingPath): string {
 /**
  * Official English marketing site (Warm Premium).
  * Served in the browser shell; Tauri desktop never mounts this tree.
+ *
+ * Legal access:
+ * - Footer → glass modal (no 404)
+ * - Deep links /privacy|/terms|/support → full pages (Vercel SPA rewrite)
  */
 export default function Landing() {
   const [path, setPath] = useState<LandingPath>(() =>
     normalizePath(window.location.pathname),
   );
+  const [legalModal, setLegalModal] = useState<LegalDocId | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = "en";
@@ -58,5 +68,12 @@ export default function Landing() {
   else if (path === "/terms") body = <TermsPage />;
   else if (path === "/support") body = <SupportPage />;
 
-  return <SiteChrome>{body}</SiteChrome>;
+  return (
+    <SiteChrome onOpenLegal={setLegalModal}>
+      {body}
+      {legalModal ? (
+        <LegalModal doc={legalModal} onClose={() => setLegalModal(null)} />
+      ) : null}
+    </SiteChrome>
+  );
 }

@@ -1,5 +1,11 @@
-import type { ReactNode } from "react";
-import { MAC_APP_STORE_URL, SUPPORT_EMAIL } from "./constants";
+import type { MouseEvent, ReactNode } from "react";
+import {
+  MAC_APP_STORE_URL,
+  SUPPORT_EMAIL,
+  SUPPORT_EMAIL_ADDRESS,
+  type LegalDocId,
+  navigateLanding,
+} from "./constants";
 
 function AppleGlyph({ className }: { className?: string }) {
   return (
@@ -16,16 +22,26 @@ function AppleGlyph({ className }: { className?: string }) {
   );
 }
 
+function goHome(event: MouseEvent<HTMLAnchorElement>) {
+  event.preventDefault();
+  navigateLanding("/");
+}
+
+type SiteChromeProps = {
+  children: ReactNode;
+  onOpenLegal: (doc: LegalDocId) => void;
+};
+
 export function SiteHeader() {
   return (
     <header className="ea-header">
       <div className="ea-shell ea-header-inner">
-        <a href="/" className="ea-logo">
+        <a href="/" className="ea-logo" onClick={goHome}>
           Excellence Absolue
         </a>
 
         <nav className="ea-nav" aria-label="Primary">
-          <a href="/" className="ea-nav-link">
+          <a href="/" className="ea-nav-link" onClick={goHome}>
             Home
           </a>
           <a href="/#features" className="ea-nav-link">
@@ -49,7 +65,11 @@ export function SiteHeader() {
   );
 }
 
-export function SiteFooter() {
+export function SiteFooter({
+  onOpenLegal,
+}: {
+  onOpenLegal: (doc: LegalDocId) => void;
+}) {
   return (
     <footer className="ea-footer">
       <div className="ea-shell">
@@ -63,10 +83,16 @@ export function SiteFooter() {
           </div>
 
           <nav className="ea-footer-links" aria-label="Legal and support">
-            <a href="/privacy">Privacy Policy</a>
-            <a href="/terms">Terms of Service</a>
-            <a href="/support">Support &amp; Contact</a>
-            <a href={SUPPORT_EMAIL}>support@excellenceabsolue.com</a>
+            <button type="button" onClick={() => onOpenLegal("privacy")}>
+              Privacy Policy
+            </button>
+            <button type="button" onClick={() => onOpenLegal("terms")}>
+              Terms of Service
+            </button>
+            <button type="button" onClick={() => onOpenLegal("support")}>
+              Support &amp; Contact
+            </button>
+            <a href={SUPPORT_EMAIL}>{SUPPORT_EMAIL_ADDRESS}</a>
           </nav>
         </div>
 
@@ -79,12 +105,12 @@ export function SiteFooter() {
   );
 }
 
-export function SiteChrome({ children }: { children: ReactNode }) {
+export function SiteChrome({ children, onOpenLegal }: SiteChromeProps) {
   return (
     <div className="ea-landing">
       <SiteHeader />
       <main>{children}</main>
-      <SiteFooter />
+      <SiteFooter onOpenLegal={onOpenLegal} />
     </div>
   );
 }

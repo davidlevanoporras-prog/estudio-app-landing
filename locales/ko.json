@@ -14,7 +14,8 @@
     "groupManagement": "관리",
     "groupCognition": "지원 및 인지",
     "openMenuLabel": "탐색 메뉴 열기",
-    "closeMenuLabel": "탐색 메뉴 닫기"
+    "closeMenuLabel": "탐색 메뉴 닫기",
+    "privacyPolicyLabel": "개인정보 처리방침"
   },
   "nav": {
     "dashboard": "대시보드",

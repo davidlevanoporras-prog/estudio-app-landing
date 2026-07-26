@@ -25,6 +25,8 @@ export type Dictionary = {
     groupCognition: string;
     openMenuLabel: string;
     closeMenuLabel: string;
+    /** App Store 5.1.1 — enlace a la Política de Privacidad pública. */
+    privacyPolicyLabel: string;
   };
   nav: {
     dashboard: string;

@@ -14,7 +14,8 @@
     "groupManagement": "Gestion",
     "groupCognition": "Support et cognition",
     "openMenuLabel": "Ouvrir le menu de navigation",
-    "closeMenuLabel": "Fermer le menu de navigation"
+    "closeMenuLabel": "Fermer le menu de navigation",
+    "privacyPolicyLabel": "Confidentialité"
   },
   "nav": {
     "dashboard": "Tableau de bord",

@@ -14,7 +14,8 @@
     "groupManagement": "管理",
     "groupCognition": "サポートと認知",
     "openMenuLabel": "ナビゲーションメニューを開く",
-    "closeMenuLabel": "ナビゲーションメニューを閉じる"
+    "closeMenuLabel": "ナビゲーションメニューを閉じる",
+    "privacyPolicyLabel": "プライバシー"
   },
   "nav": {
     "dashboard": "ダッシュボード",
