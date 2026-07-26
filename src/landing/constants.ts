@@ -18,12 +18,11 @@ export function normalizePath(pathname: string): LandingPath {
   return "/";
 }
 
-/** Client-side SPA navigation — avoids full reload 404s before Vercel rewrites. */
+/** Stay on the marketing root — never push legal subpaths (footer uses modals). */
 export function navigateLanding(path: LandingPath): void {
-  if (normalizePath(window.location.pathname) === path) {
-    window.dispatchEvent(new PopStateEvent("popstate"));
-    return;
+  const target = path === "/" ? "/" : "/";
+  if (window.location.pathname !== target || window.location.hash) {
+    window.history.pushState({}, "", target);
   }
-  window.history.pushState({}, "", path);
-  window.dispatchEvent(new PopStateEvent("popstate"));
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }

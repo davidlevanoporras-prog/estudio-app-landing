@@ -15,8 +15,7 @@ const TITLES: Record<LegalDocId, string> = {
 };
 
 /**
- * Glass overlay for legal docs — footer clicks never hit a missing route.
- * Deep links (/privacy etc.) still work via SPA pages + vercel.json rewrites.
+ * Glass overlay for legal docs. Does not change the browser URL.
  */
 export default function LegalModal({ doc, onClose }: LegalModalProps) {
   useEffect(() => {
@@ -60,6 +59,15 @@ export default function LegalModal({ doc, onClose }: LegalModalProps) {
           <article>
             <LegalArticle id={doc} />
           </article>
+        </div>
+        <div className="ea-legal-modal-footer">
+          <button
+            type="button"
+            className="ea-cta ea-cta-primary"
+            onClick={onClose}
+          >
+            Close
+          </button>
         </div>
       </div>
     </div>

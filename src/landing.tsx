@@ -1,45 +1,34 @@
 import { useEffect, useState } from "react";
 import {
   normalizePath,
-  type LandingPath,
   type LegalDocId,
 } from "./landing/constants";
 import HomePage from "./landing/HomePage";
-import { PrivacyPage, SupportPage, TermsPage } from "./landing/LegalPages";
 import LegalModal from "./landing/LegalModal";
 import { SiteChrome } from "./landing/SiteChrome";
 import "./landing/landing.css";
 
-function pageTitle(path: LandingPath): string {
-  switch (path) {
-    case "/privacy":
-      return "Privacy Policy — Excellence Absolue";
-    case "/terms":
-      return "Terms of Service — Excellence Absolue";
-    case "/support":
-      return "Support — Excellence Absolue";
-    default:
-      return "Excellence Absolue — Effortless studying for Mac";
-  }
+function legalDocFromPath(pathname: string): LegalDocId | null {
+  const path = normalizePath(pathname);
+  if (path === "/privacy") return "privacy";
+  if (path === "/terms") return "terms";
+  if (path === "/support") return "support";
+  return null;
 }
 
 /**
- * Official English marketing site (Warm Premium).
- * Served in the browser shell; Tauri desktop never mounts this tree.
- *
- * Legal access:
- * - Footer → glass modal (no 404)
- * - Deep links /privacy|/terms|/support → full pages (Vercel SPA rewrite)
+ * Marketing landing — legal docs open as glass modals only.
+ * Footer never navigates to /privacy|/terms|/support (avoids Vercel 404).
+ * Deep links still open the matching modal, then normalize the URL to `/`.
  */
 export default function Landing() {
-  const [path, setPath] = useState<LandingPath>(() =>
-    normalizePath(window.location.pathname),
+  const [legalModal, setLegalModal] = useState<LegalDocId | null>(() =>
+    legalDocFromPath(window.location.pathname),
   );
-  const [legalModal, setLegalModal] = useState<LegalDocId | null>(null);
 
   useEffect(() => {
     document.documentElement.lang = "en";
-    document.title = pageTitle(path);
+    document.title = "Excellence Absolue — Effortless studying for Mac";
     const html = document.documentElement;
     const body = document.body;
     const prevHtmlBg = html.style.background;
@@ -53,24 +42,27 @@ export default function Landing() {
       body.style.background = prevBodyBg;
       body.style.color = prevColor;
     };
-  }, [path]);
-
-  useEffect(() => {
-    const onPopState = () => {
-      setPath(normalizePath(window.location.pathname));
-    };
-    window.addEventListener("popstate", onPopState);
-    return () => window.removeEventListener("popstate", onPopState);
   }, []);
 
-  let body = <HomePage />;
-  if (path === "/privacy") body = <PrivacyPage />;
-  else if (path === "/terms") body = <TermsPage />;
-  else if (path === "/support") body = <SupportPage />;
+  // Deep link /privacy etc. → open modal, keep address bar on `/`.
+  useEffect(() => {
+    const doc = legalDocFromPath(window.location.pathname);
+    if (!doc) return;
+    setLegalModal(doc);
+    window.history.replaceState({}, "", "/");
+  }, []);
+
+  const openLegal = (doc: LegalDocId) => {
+    setLegalModal(doc);
+    // Never push /privacy|/terms|/support — URL stays on the landing root.
+    if (normalizePath(window.location.pathname) !== "/") {
+      window.history.replaceState({}, "", "/");
+    }
+  };
 
   return (
-    <SiteChrome onOpenLegal={setLegalModal}>
-      {body}
+    <SiteChrome onOpenLegal={openLegal}>
+      <HomePage />
       {legalModal ? (
         <LegalModal doc={legalModal} onClose={() => setLegalModal(null)} />
       ) : null}
