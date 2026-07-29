@@ -1,6 +1,7 @@
 import type { MouseEvent, ReactNode } from "react";
 import {
   MAC_APP_STORE_URL,
+  SHOW_MAC_APP_STORE_CTA,
   SUPPORT_EMAIL,
   SUPPORT_EMAIL_ADDRESS,
   type LegalDocId,
@@ -49,17 +50,19 @@ export function SiteHeader() {
           </a>
         </nav>
 
-        <div className="ea-header-cta">
-          <a
-            href={MAC_APP_STORE_URL}
-            className="ea-cta ea-cta-primary ea-cta-header"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <AppleGlyph />
-            Download on the App Store
-          </a>
-        </div>
+        {SHOW_MAC_APP_STORE_CTA ? (
+          <div className="ea-header-cta">
+            <a
+              href={MAC_APP_STORE_URL}
+              className="ea-cta ea-cta-primary ea-cta-header"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <AppleGlyph />
+              Download on the App Store
+            </a>
+          </div>
+        ) : null}
       </div>
     </header>
   );

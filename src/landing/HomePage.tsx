@@ -1,5 +1,5 @@
 import { motion, type Variants } from "framer-motion";
-import { MAC_APP_STORE_URL } from "./constants";
+import { MAC_APP_STORE_URL, SHOW_MAC_APP_STORE_CTA } from "./constants";
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28 },
@@ -56,15 +56,17 @@ export default function HomePage() {
               milestones with clarity.
             </p>
             <div className="ea-hero-actions">
-              <a
-                href={MAC_APP_STORE_URL}
-                className="ea-cta ea-cta-primary"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <AppleGlyph />
-                Download on the App Store
-              </a>
+              {SHOW_MAC_APP_STORE_CTA ? (
+                <a
+                  href={MAC_APP_STORE_URL}
+                  className="ea-cta ea-cta-primary"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <AppleGlyph />
+                  Download on the App Store
+                </a>
+              ) : null}
               <a href="#command-center" className="ea-cta ea-cta-secondary">
                 Start Your Free Journey
               </a>
@@ -360,23 +362,25 @@ export default function HomePage() {
           >
             Time is irrevocable, and we know it.
           </motion.blockquote>
-          <motion.div
-            className="ea-epilogue-cta"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.5 }}
-            variants={fadeUpDelay}
-          >
-            <a
-              href={MAC_APP_STORE_URL}
-              className="ea-cta ea-cta-primary"
-              target="_blank"
-              rel="noopener noreferrer"
+          {SHOW_MAC_APP_STORE_CTA ? (
+            <motion.div
+              className="ea-epilogue-cta"
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.5 }}
+              variants={fadeUpDelay}
             >
-              <AppleGlyph />
-              Download on the App Store
-            </a>
-          </motion.div>
+              <a
+                href={MAC_APP_STORE_URL}
+                className="ea-cta ea-cta-primary"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <AppleGlyph />
+                Download on the App Store
+              </a>
+            </motion.div>
+          ) : null}
         </div>
       </section>
     </>

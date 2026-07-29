@@ -2,6 +2,12 @@
 export const MAC_APP_STORE_URL =
   "https://apps.apple.com/app/excellence-absolue/id0000000000";
 
+/**
+ * Hide App Store CTAs while the listing is under Apple review.
+ * Flip to `true` once the real `MAC_APP_STORE_URL` is live.
+ */
+export const SHOW_MAC_APP_STORE_CTA = false;
+
 /** Primary support & privacy contact (App Store Guideline 5.1.1). */
 export const SUPPORT_EMAIL_ADDRESS = "excellenceabsolue@gmail.com";
 export const SUPPORT_EMAIL = `mailto:${SUPPORT_EMAIL_ADDRESS}`;
